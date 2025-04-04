@@ -1,4 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, flash
+import base64
+import os
 import numpy as np
 import mysql.connector
 import re
@@ -6,10 +8,22 @@ import razorpay
 import razorpay.errors
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from datetime import timedelta
+from werkzeug.utils import secure_filename
 
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = 'secret_key'
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Allow up to 16MB
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)  # Session timeout
+
+# Ensure upload folder exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+    
+# Store answers globally for simplicity (use DB in real applications)
+user_answers = {}
 
 # Database setup
 sql_connection = mysql.connector.connect(
@@ -40,6 +54,32 @@ def diagnosis():
         return render_template('diagnosis.html')
     else:
         return redirect(url_for('login'))
+    
+#Capture
+@app.route('/capture')
+def capture():
+    return render_template('capture.html')
+
+#MOOD_RELATED_QUESTIONS
+@app.route('/questions', methods=['GET', 'POST'])
+def questions():
+    if request.method == 'POST':
+        return render_template('questions.html')
+    return redirect(url_for('capture'))
+
+
+@app.route('/submit', methods=['POST'])
+def submit():
+    if request.method == 'POST':
+        try:
+            q1 = request.form.get("question1")
+            q2 = request.form.get("question2")
+            q3 = request.form.get("question3")
+        except:
+            flash("Something went wrong while processing the form.", "message")
+            return render_template('questions.html')
+    return render_template("Result2.html", q1=q1, q2=q2, q3=q3)
+
 
 #Register
 @app.route('/register', methods=['GET', 'POST'])

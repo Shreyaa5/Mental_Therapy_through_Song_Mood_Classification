@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Question-Answer</title>
+    <title>questions</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -54,7 +54,7 @@
 <body>
     <div class="container">
         <h2>Answer the Following Questions</h2>
-        <form action="/predict" method="POST">
+        <form action="{{ url_for('submit') }}" method="POST">
             <label for="q1">How are you feeling today?</label>
             <input type="text" id="q1" name="q1" placeholder="Enter your mood..." required>
             
