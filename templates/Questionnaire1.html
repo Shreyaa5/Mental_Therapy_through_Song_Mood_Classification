@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Questionnaire1</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+
+<body>
+    <div class="container">
+        <h1>Welcome, {{user}}</h1>
+        <h2>Answer the following questions:</h2>
+
+
+        {% with messages = get_flashed_messages(category_filter=["message"]) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                    <p class="flash-message">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
+
+
+        <form method="POST" action="{{ url_for('questionnaire2') }}">
+            <div class="question">
+                <label>1.Do you frequently experience excessive worry, fear, or restlessness, often accompanied by physical symptoms like heart palpitations, sweating, or trembling?</label><br>
+                <input type="radio" name="question1" id="question1" value="Yes"> Yes
+                <input type="radio" name="question1" id="question1" value="No"> No
+            </div>
+            <div class="question">
+                <label>2.Do you frequently feel persistently sad, hopeless, or fatigued, along with changes in sleep, appetite, or weight?</label><br>
+                <input type="radio" name="question2" value="Yes"> Yes
+                <input type="radio" name="question2" value="No"> No
+            </div>
+            <div class="question">
+                <label>3.Have you ever experienced periods of excessive energy, reduced need for sleep, or impulsive and reckless behavior?</label><br>
+                <input type="radio" name="question3" value="Yes"> Yes
+                <input type="radio" name="question3" value="No"> No
+            </div>
+            <div class="question">
+                <label>4.Do you experience intrusive thoughts or feel compelled to repeat actions like checking, cleaning, or counting, even when unnecessary?</label><br>
+                <input type="radio" name="question4" value="Yes"> Yes
+                <input type="radio" name="question4" value="No"> No
+            </div>
+            <div class="question">
+                <label>5.Have you had flashbacks, intrusive memories, or found yourself avoiding reminders of traumatic events?</label><br>
+                <input type="radio" name="question5" value="Yes"> Yes
+                <input type="radio" name="question5" value="No"> No
+            </div>
+            <div class="question">
+                <label>6.Do you feel emotionally detached, numb, or hyper-alert to your surroundings, even in safe situations?</label><br>
+                <input type="radio" name="question6" value="Yes"> Yes
+                <input type="radio" name="question6" value="No"> No
+            </div>
+            <div class="question">
+                <label>7.Have you experienced hallucinations, delusions, or a sense of disconnection from reality?</label><br>
+                <input type="radio" name="question7" value="Yes"> Yes
+                <input type="radio" name="question7" value="No"> No
+            </div>
+            <button type="submit">Next</button>
+            <div class="back-to-home">
+                <a href="{{ url_for('home') }}">Back to Home</a>
+            </div>
+            
+    </form>
+    </div>
+</body>
+</html>

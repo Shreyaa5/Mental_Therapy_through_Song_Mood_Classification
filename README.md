@@ -1,5 +1,4 @@
-# Mental_Therapy_through_Song_Mood_Classification
-
+# Mental Therapy through Song Mood Classification
 Our Final Year College Project is integrating Music and Technology for helping to transform mental therapy by combining AI and music to 
 classify songs by mood and recommend personalized playlists.
 
