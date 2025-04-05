@@ -10,16 +10,16 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import timedelta
 from werkzeug.utils import secure_filename
+import cv2
+from datetime import datetime
 
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = 'secret_key'
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Allow up to 16MB
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)  # Session timeout
 
-# Ensure upload folder exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+CAPTURE_FOLDER = os.path.join('static', 'captured_images')
+os.makedirs(CAPTURE_FOLDER, exist_ok=True)
 
     
 # Store answers globally for simplicity (use DB in real applications)
@@ -60,11 +60,53 @@ def diagnosis():
 def capture():
     return render_template('capture.html')
 
+#Save captured image
+@app.route('/save_captured_image', methods=['POST'])
+def save_captured_image():
+    try:
+        data = request.json['image']
+        
+        # Clean base64 prefix if present
+        if ',' in data:
+            _, data = data.split(',', 1)
+        
+        # Decode and convert to NumPy array
+        img_bytes = base64.b64decode(data)
+        img_np_arr = np.frombuffer(img_bytes, np.uint8)
+        img = cv2.imdecode(img_np_arr, cv2.IMREAD_COLOR)
+
+        # Get dimensions (height, width, channels)
+        if img is not None:
+            height, width, channels = img.shape
+            print(f"[INFO] Captured image dimensions: {width}x{height}, Channels: {channels}")
+        else:
+            raise ValueError("Image decoding failed. The input might not be valid.")
+
+        # Generate filename and path
+        filename = f"capture_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+        filepath = os.path.join(CAPTURE_FOLDER, filename)
+
+        # Save image
+        cv2.imwrite(filepath, img)
+
+        # Store image path in session for /questions route
+        session['captured_image'] = filepath
+
+        return render_template('questions.html')
+
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        })
+
+
 #MOOD_RELATED_QUESTIONS
 @app.route('/questions', methods=['GET', 'POST'])
 def questions():
     if request.method == 'POST':
-        return render_template('questions.html')
+        image_path = session.get('captured_image')
+        return render_template('questions.html',image_path=image_path)
     return redirect(url_for('capture'))
 
 

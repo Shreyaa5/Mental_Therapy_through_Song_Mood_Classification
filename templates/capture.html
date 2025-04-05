@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: Verdana, Geneva, Tahoma, sans-serif;
-            background-image: url("/static/images/background.jpg") ;
+            background-image: url("/static/images/background.jpg");
             background-size: cover;
             background-repeat: no-repeat;
             background-attachment: fixed;
@@ -51,10 +51,7 @@
         <button id="capture">Capture</button>
         <canvas id="canvas" style="display:none;"></canvas>
         <img id="photo" src="" alt="Captured Image" style="display:none;">
-        <form action="/questions" method="POST">
-            <input type="hidden" name="imageData" id="imageData">
-            <button type="submit">Next</button>
-        </form>
+        <button id="submitBtn">Next</button>
     </div>
 
     <script>
@@ -63,20 +60,47 @@
         const context = canvas.getContext('2d');
         const photo = document.getElementById('photo');
         const captureButton = document.getElementById('capture');
-        const imageDataInput = document.getElementById('imageData');
+        const submitButton = document.getElementById('submitBtn');
 
+        // Set up camera
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => video.srcObject = stream)
-            .catch(err => console.log(err));
+            .catch(err => console.error('Camera error:', err));
 
+        // Capture image
         captureButton.addEventListener('click', () => {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = canvas.toDataURL('image/png');
-            photo.src = imageData;
+            const MAX_WIDTH = 400;
+            const MAX_HEIGHT = 300;
+
+            canvas.width = MAX_WIDTH;
+            canvas.height = MAX_HEIGHT;
+            context.drawImage(video, 0, 0, MAX_WIDTH, MAX_HEIGHT);
+
+            // Show preview
+            photo.src = canvas.toDataURL('image/jpeg', 0.7);
             photo.style.display = 'block';
-            imageDataInput.value = imageData;
+        });
+
+        // Send image to Flask and render questions page
+        submitButton.addEventListener('click', () => {
+            const base64Image = canvas.toDataURL('image/jpeg', 0.7);
+
+            fetch('/save_captured_image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64Image })
+            })
+            .then(response => response.text()) // Expecting HTML now
+            .then(html => {
+                // Replace current page content with new HTML
+                document.open();
+                document.write(html);
+                document.close();
+            })
+            .catch(error => {
+                console.error('Error sending image:', error);
+                alert('An error occurred while sending the image.');
+            });
         });
     </script>
 </body>

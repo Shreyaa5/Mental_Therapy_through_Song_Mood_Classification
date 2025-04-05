@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>questions</title>
+    <title>Questions</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,8 +14,7 @@
         .container {
             background: transparent;
             max-width: 600px;
-            height: 400px;
-            margin: 150px auto;
+            margin: 50px auto;
             padding: 20px;
             border-radius: 20px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
@@ -49,21 +48,34 @@
         button:hover {
             background-color: #218838;
         }
+        .captured-img {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Answer the Following Questions</h2>
+
+        {% if image_path %}
+            <img src="{{ url_for('static', filename=image_path.split('static/')[-1]) }}" 
+                 alt="Captured Image" class="captured-img">
+        {% endif %}
+
         <form action="{{ url_for('submit') }}" method="POST">
             <label for="q1">How are you feeling today?</label>
-            <input type="text" id="q1" name="q1" placeholder="Enter your mood..." required>
-            
+            <input type="text" id="q1" name="question1" placeholder="Enter your mood..." required>
+
             <label for="q2">What is something that made you happy recently?</label>
-            <input type="text" id="q2" name="q2" placeholder="Describe a happy moment..." required>
-            
+            <input type="text" id="q2" name="question2" placeholder="Describe a happy moment..." required>
+
             <label for="q3">Do you prefer energetic or calming music right now?</label>
-            <input type="text" id="q3" name="q3" placeholder="Energetic or calming?" required>
-            
+            <input type="text" id="q3" name="question3" placeholder="Energetic or calming?" required>
+
             <button type="submit">Submit</button>
         </form>
     </div>
