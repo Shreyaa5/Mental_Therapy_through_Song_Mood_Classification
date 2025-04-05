@@ -51,7 +51,7 @@
         <button id="capture">Capture</button>
         <canvas id="canvas" style="display:none;"></canvas>
         <img id="photo" src="" alt="Captured Image" style="display:none;">
-        <button id="submitBtn">Next</button>
+        <button id="submitBtn" style="display:none;">Next</button>
     </div>
 
     <script>
@@ -79,6 +79,9 @@
             // Show preview
             photo.src = canvas.toDataURL('image/jpeg', 0.7);
             photo.style.display = 'block';
+
+            // Show the Next button after capturing
+            submitButton.style.display = 'inline-block';
         });
 
         // Send image to Flask and render questions page
