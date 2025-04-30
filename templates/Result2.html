@@ -1,72 +1,65 @@
-<!-- playlist.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mood-Based Playlist</title>
+    <title>Diagnosis Result</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-image: url("/static/images/resultbg.png") ;
+            background-image: url("/static/images/resultbg.png");
             background-size: cover;
             background-repeat: no-repeat;
             background-attachment: fixed;
             text-align: center;
             padding: 20px;
-            
-            
         }
         .container {
             background-color: white;
             max-width: 600px;
-            height: 400px;
             margin: 100px auto;
-            padding: 20px;
+            padding: 30px;
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            opacity: 0.85;
+            opacity: 0.9;
         }
-        
-        h1,h2 {
+        h1, h2 {
             font-family: Verdana, Geneva, Tahoma, sans-serif;
             color: #333;
         }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        li {
-            background: #e9ecef;
-            margin: 10px 0;
+        input[type="text"], button {
+            margin-top: 15px;
             padding: 10px;
+            font-size: 16px;
+            width: 80%;
             border-radius: 5px;
-            font-size: 18px;
+            border: 1px solid #ccc;
         }
-        a {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 10px 15px;
+        button {
             background-color: #007bff;
             color: white;
-            text-decoration: none;
-            border-radius: 5px;
+            border: none;
+            cursor: pointer;
         }
-        a:hover {
+        button:hover {
             background-color: #0056b3;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Your current Mood is {{name}}</h1>
-        <h2>Your Personalized Playlist</h2>
-        <ul>
-            {% for song in playlist %}
-                <li>{{ song }}</li>
-            {% endfor %}
-        </ul>
-        <a href="/">Go Back</a>
+        <h1>Mood Diagnosis Complete</h1>
+        <p>Your mood has been identified as <strong>Sad</strong>.</p>
+        <p>Q1 Score: {{ q1 }}</p>
+        <p>Q2 Score: {{ q2 }}</p>
+        <p>Q3 Score: {{ q3 }}</p>
+
+        <form action="{{ url_for('generate_playlist') }}" method="POST">
+            <label for="playlist_name">Name your playlist:</label><br>
+            <input type="text" id="playlist_name" name="playlist_name" placeholder="Enter playlist name" required><br>
+            <input type="hidden" name="mood" value="sad">
+            <button type="submit">Generate Playlist</button>
+        </form>
     </div>
 </body>
 </html>

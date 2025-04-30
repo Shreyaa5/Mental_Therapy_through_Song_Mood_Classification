@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Your Personalized Playlist</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #444;
+            margin-bottom: 30px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .song-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .play-link {
+            display: inline-block;
+            margin-top: 8px;
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .play-link:hover {
+            text-decoration: underline;
+        }
+
+        .back-btn {
+            display: block;
+            margin: 30px auto 0;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            text-align: center;
+            width: fit-content;
+        }
+
+        .back-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Playlist: {{ playlist_name }}</h1>
+        <h2>Click on any song to listen on Spotify</h2>
+
+        {% if audio_files %}
+            <ul>
+                {% for song in audio_files %}
+                    <li>
+                        <a href="{{ song.url }}" target="_blank">{{ song.name }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No songs found for your mood.</p>
+        {% endif %}
+
+        <a class="back-button" href="/">Go Back to Home</a>
+    </div>
+</body>
+</html>

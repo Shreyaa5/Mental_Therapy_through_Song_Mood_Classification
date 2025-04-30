@@ -16,6 +16,10 @@ import string
 from io import BytesIO
 from flask import send_file
 from PIL import Image, ImageDraw, ImageFont
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+from googleapiclient.discovery import build
+from google.oauth2 import service_account
 
 
 # Initialize Flask app
@@ -35,6 +39,128 @@ sql_connection = mysql.connector.connect(
     database="flask_ml_db",
     port="3316"
 )
+
+# 🔗 MongoDB connection (added from ChronoTunes)
+key = "6Kto5LxwDqchjAc0"
+uri = "mongodb+srv://abhirajbanerjee02:6Kto5LxwDqchjAc0@cluster-chronotunes.pkxxz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster-ChronoTunes"
+mongoClient = MongoClient(uri, server_api=ServerApi('1'))
+collection = mongoClient['users']['chronoTunes']
+song_db = mongoClient['songs']
+
+# Spotify Credentials
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+
+sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+    client_id="9e1b5aca31eb4ec78abccccb05846c40",
+    client_secret="c502b9cb165c476db22e415dbce3b886"
+))
+
+
+
+# 🔗 Google Drive API for audio streaming
+def create_drive_service():
+    SERVICE_ACCOUNT_FILE = 'credentials.json'
+    SCOPES = ['https://www.googleapis.com/auth/drive']
+    creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+    return build('drive', 'v3', credentials=creds)
+
+service = create_drive_service()
+
+# 🗂 Folder IDs for genres
+def get_folder_id(genre):
+    mapping = {
+        'bengali': '1gifXb2IjlJoIYs9mCZW1-0XITQ6qr1J4',
+        'classical': '11gCZK8C4lWcAX77tCuYRbi5jC8cbMhnW',
+        'hindi-retro': '1VAV9M8cYo9ZMAkBoMZrJpe4Kupx8Jst3',
+        'hindi-modern': '1Ai-dpQ6s2_E_ShWifMHLoOvypZoBzymR'
+    }
+    return mapping.get(genre.lower(), '')
+
+## 🎵 Route to get playlist based on mood (hardcoded as sad) and raga
+@app.route('/generate_playlist', methods=['POST'])
+def generate_playlist():
+    if 'loggedin' not in session:
+        flash('Please log in to continue.', 'error')
+        return redirect(url_for('login'))
+
+    mood = request.form.get('mood', 'sad')  # for now, hardcoded to sad
+    playlist_name = request.form.get('playlist_name')
+    genre = 'classical'  # default genre
+    playlist_length = 10
+
+    # Define thaat for sad mood
+    thaat = ['Bhairavi', 'Bhairav', 'Kafi', 'Bilawal', 'Todi']
+    songs = song_db[genre].find({"thaat": {"$in": thaat}}, {'filename': 1})
+    filenames = [song['filename'] for song in songs if 'filename' in song]
+
+    if not filenames:
+        flash("No songs found for the selected mood.", "error")
+        return render_template('playlist.html', playlist_name=playlist_name, audio_files=[])
+
+    selected = random.sample(filenames, min(playlist_length, len(filenames)))
+
+    folder_id = get_folder_id(genre)
+    query = f"'{folder_id}' in parents and mimeType='audio/mpeg'"
+    results = service.files().list(q=query, fields="files(id, name)").execute()
+    items = results.get('files', [])
+
+    audio_files = []
+    for file in items:
+        song_name = file['name'].replace('.mp3', '').replace('_', ' ')
+        if file['name'].replace('.mp3', '.pickle') in selected:
+            try:
+                result = sp.search(q=song_name, type='track', limit=1)
+                if result['tracks']['items']:
+                    top_track = result['tracks']['items'][0]
+                    track_url = top_track['external_urls']['spotify']
+                    audio_files.append({'name': song_name, 'url': track_url})
+            except Exception as e:
+                print(f"Spotify search error for {song_name}: {e}")
+
+    return render_template('playlist.html', playlist_name=playlist_name, audio_files=audio_files)
+
+
+
+#/submit ROUTE TO HARD-CODE SAD MOOD
+@app.route('/process_mood', methods=['POST'])
+def process_mood():
+    if request.method == 'POST':
+        try:
+            q1 = int(request.form.get("question1"))
+            q2 = int(request.form.get("question2"))
+            q3 = int(request.form.get("question3"))
+            score = q1 + q2 + q3
+            session['score'] = score
+
+            # Hardcoded sad mood logic
+            genre = 'classical'
+            playlist_length = 10
+            thaat = ['Bhairavi', 'Bhairav', 'Kafi', 'Bilawal', 'Todi']
+            songs = song_db[genre].find({"thaat": {"$in": thaat}}, {'filename': 1})
+            filenames = [song['filename'] for song in songs if 'filename' in song]
+
+            if not filenames:
+                flash("No songs found for mood.", "error")
+                return render_template('Result2.html', q1=q1, q2=q2, q3=q3, audio_files=[])
+
+            selected = random.sample(filenames, min(playlist_length, len(filenames)))
+            folder_id = get_folder_id(genre)
+            query = f"'{folder_id}' in parents and mimeType='audio/mpeg'"
+            results = service.files().list(q=query, fields="files(id, name)").execute()
+            items = results.get('files', [])
+
+            audio_files = [
+                {'name': file['name'], 'url': f"https://drive.google.com/file/d/{file['id']}/view"}
+                for file in items if file['name'].replace('.mp3', '.pickle') in selected
+            ]
+
+            return render_template("Result2.html", q1=q1, q2=q2, q3=q3, audio_files=audio_files)
+
+        except Exception as e:
+            flash(f"Error processing form: {str(e)}", "message")
+            return render_template('questions.html')
+
 
 RAZORPAY_KEY_ID = "rzp_test_iXumXBu7UMOLEf"
 RAZORPAY_KEY_SECRET = "DbnMUMaSxdlLkTNCZ0ruZb7R"
@@ -61,6 +187,291 @@ def diagnosis():
         return render_template('diagnosis.html')
     else:
         return redirect(url_for('login'))
+
+
+#Questionnaire1
+@app.route('/startDiagnosis', methods=['POST'])
+def startDiagnosis():
+    if 'loggedin' in session:
+        try:
+            return(render_template('Questionnaire1.html',user=session['firstname']))
+        except:
+            flash("Some Error Occured","message")
+            return redirect(url_for('login'))
+
+    else:
+        flash("Please login before diagnosis.","message")
+        return(render_template('landing.html'))
+    
+
+
+#Questionnaire2  
+@app.route('/questionnaire2', methods=['POST'])
+def questionnaire2():
+    try:
+        answer1=[
+                request.form['question1'],
+                request.form['question2'],
+                request.form['question3'],
+                request.form['question4'],
+                request.form['question5'],
+                request.form['question6'],
+                request.form['question7']]
+    except:
+        flash("Please fill every field","message")
+        return(render_template('Questionnaire1.html',user=session['firstname']))
+    session['answer']= answer1
+    return(render_template('Questionnaire2.html',user=session['firstname']))
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    if request.method == 'POST':
+        # Get user form input (Yes/No answers)
+        try:
+            answers2 = [
+                request.form['question8'],
+                request.form['question9'],
+                request.form['question10'],
+                request.form['question11'],
+                request.form['question12'],
+                request.form['question13'],
+                request.form['question14']]
+        except:
+            flash("Please fill every field","message")
+            return(render_template('Questionnaire2.html',user=session['username']))
+
+        answers=[]
+        answers.extend(session['answer']) 
+        answers.extend(answers2)
+
+        # Convert answers to numerical values (e.g., Yes = 1, No = 0)
+        answers = [1 if answer == 'Yes' else 0 for answer in answers]
+
+       
+        user = {
+            'is_member': True if session['membership'] == "active" else False
+        }
+
+        # Logic to calculate disorder scores
+
+        disorder_scores = {
+            "Anxiety Disorder": answers[0] + answers[9] + answers[13],
+            "Depression": answers[1] + answers[8] + answers[12] ,
+            "Bipolar Disorder": answers[2] + answers[10],
+            "Obsessive Compulsive Disorder": answers[3] + answers[11],
+            "Post-Traumatic Stress Disorder": answers[4] + answers[5],
+            "Schizophrenia":  answers[6] + answers[12]
+        }
+
+        # Determine the most likely disorder
+        if disorder_scores[max(disorder_scores, key=disorder_scores.get)] !=0:
+            most_likely_disorder = max(disorder_scores, key=disorder_scores.get)  
+        else:
+            most_likely_disorder = "Healthy"
+
+        cur = sql_connection.cursor()
+        cur.execute('SELECT * FROM responses WHERE user_id = %s', (session['user_id'],))
+        if(cur.fetchone()):
+            cur.execute('UPDATE responses SET disorder = %s WHERE user_id = %s',(most_likely_disorder,session['user_id']))
+            sql_connection.commit()
+        else:
+            cur.execute('INSERT INTO responses (user_id, disorder) VALUES (%s, %s)', (session['user_id'],most_likely_disorder))
+            sql_connection.commit()
+
+        if(most_likely_disorder == "Healthy"):
+            return render_template('healthy.html',name=session['firstname'])
+
+        
+
+        if(most_likely_disorder == "Anxiety Disorder"):
+            raag = "Bilawal"
+            TOD = "morning, during sunrise"
+
+            song1 = "Mayur Pangkhi Louka Amar"
+            link1 = "https://open.spotify.com/track/1QUefoT4WXG8tNR92ilCgE"
+
+            song2 = "Manush Hoye"
+            link2 = "https://open.spotify.com/track/1t715y57YZCksMYtNdtbIJ"
+
+            song3 = "Bhatiganger Majhi Ami"
+            link3 = "https://open.spotify.com/track/1APcdHREzjUAaqnJnlAIMG"
+
+            desc = "Bilawal is a Shuddha raaga (all natural notes) that creates a cheerful, tranquil, and harmonious mood. Its simplicity makes it ideal for grounding the mind and alleviating anxious thoughts."
+
+            firstAction = "Exercise: Regular physical activity releases endorphins and reduces stress hormones like cortisol. Activities like brisk walking, jogging, yoga, or swimming are especially beneficial."
+            secondAction = "Deep Breathing Exercises: Practice diaphragmatic or box breathing to reduce anxiety symptoms immediately. For example, inhale for 4 seconds, hold for 4 seconds, exhale for 4 seconds, and repeat."
+            thirdAction = "Progressive Muscle Relaxation (PMR): Tensing and then relaxing muscle groups can help reduce physical tension caused by anxiety."
+            forthAction = "Watch Comedy: Laughter reduces stress hormones and boosts mood."
+        elif(most_likely_disorder == "Depression"):
+            raag = "Kafi"
+            TOD = "evening"
+
+            song1 = "Chikan Goalini"
+            link1 = "https://open.spotify.com/track/6PKlzTQ4eA2N3Hrm8wPWIy"
+
+            song2 = "Gyaner Gyanda"
+            link2 = "https://open.spotify.com/track/1gj3lFcZW8vZkg9gW5c8Pl"
+
+            song3 = "Vadu Amar Garobini"
+            link3 = "https://open.spotify.com/track/4SSfCXsyYHGunfSUryzE1U"
+
+            desc = "Raaga Kafi is soft and soothing, it creates a relaxed and pleasant atmosphere. It helps ease emotional pain, creating a sense of comfort and calm."
+
+            firstAction = "Daily Exercise: Even light physical activity like walking, stretching, or yoga can release endorphins and improve mood. Aim for 20-30 minutes most days."
+            secondAction = "Spending Time Outdoors: Activities like gardening or hiking expose you to sunlight, increasing Vitamin D and improving mood."
+            thirdAction = "Gratitude Journaling: List 3 things you are grateful for each day to shift focus toward the positive aspects of life."
+            forthAction = "Create a Sleep Routine: Go to bed and wake up at the same time daily, aiming for 7-9 hours of quality sleep."
+        elif(most_likely_disorder == "Bipolar Disorder"):
+            raag = "Poorvi"
+            TOD = "twilight, i.e around dusk"
+
+            song1 = "O Sundar"
+            link1 = "https://open.spotify.com/track/3VdsY4zZweY9ijNOPIab09"
+
+            song2 = "Khat Palanke"
+            link2 = "https://open.spotify.com/track/6SB6rcD1j0F5mDdII2u2Y2"
+
+            song3 = "Emon Manob Somaj"
+            link3 = "https://open.spotify.com/track/1XDM4SFKl1dgK3vy6u2sb5"
+
+            desc = "Poorvi is a Sandhi Prakash Raaga (suitable for twilight) and has a mystical quality that induces balance and emotional tranquility. It uses a mix of komal (flat) and shuddha (natural) notes, creating a meditative and grounding effect."
+
+            firstAction = "Daily Schedule: Maintain a consistent routine for sleeping, eating, and activities to reduce mood swings triggered by irregularities."
+            secondAction = "Positive Affirmations: Practice self-compassion with affirmations like, “I am in control of my thoughts,” or “This phase will pass.”"
+            thirdAction = "Grounding with Nature: Touching the earth (e.g., gardening, sitting on grass) can help stabilize energy and connect to the present moment."
+            forthAction = "Writing: Journaling thoughts and feelings fosters self-awareness and provides emotional release."
+        elif(most_likely_disorder == "Obsessive Compulsive Disorder"):
+            raag = "Kafi"
+            TOD = "evening"
+
+            song1 = "Boli O Khokar Ma"
+            link1 = "https://open.spotify.com/track/13tdWCj9rxHx7UqiNXL7Mt"
+
+            song2 = "Hari Din To Gelo"
+            link2 = "https://open.spotify.com/track/1ijtcd8LuYfI3fVLvtqNcT"
+
+            song3 = "Bhatiyal Ganger Naiya"
+            link3 = "https://open.spotify.com/track/5MPm6CXwqH9x3eBS0xPJkr"
+
+            desc = "Kafi is mellow and thus promotes relaxation and reduces tension. It eases anxiety and encourages mindfulness, reducing the compulsion to perform repetitive behaviors."
+
+            firstAction = "Puzzles or Board Games: Activities that engage problem-solving can distract the mind from intrusive thoughts."
+            secondAction = "Hobbies: Engage in hobbies you enjoy, such as knitting, photography, or woodworking, to occupy your hands and mind."
+            thirdAction = "Limit Overchecking: Create boundaries for actions like re-reading, re-checking, or seeking excessive reassurance."
+            forthAction = "Digital Detox: Avoid spending too much time online researching fears or compulsions, as this can fuel anxiety."
+        elif(most_likely_disorder == "Post-Traumatic Stress Disorder"):
+            raag = "Todi"
+            TOD = "morning, just after sunrise"
+
+            song1 = "Hatey Hari Ebar Ami"
+            link1 = "https://open.spotify.com/track/3DMR2iKoWQ0SkIxlJ3Yfr8"
+
+            song2 = "Bhangor Bhola Shib Tomar"
+            link2 = "https://open.spotify.com/track/3msn6YUhZTpiLDiY0CCw5w"
+
+            song3 = "Ghum Venge Besh Moja Hoeche"
+            link3 = "https://open.spotify.com/track/4jwBPXsdUK9bI3aS6WodWA"
+
+            desc = "Todi is a profound and introspective raaga that uses komal (flat) notes and a slow progression, creating a melancholic yet healing atmosphere. It encourages emotional release and processing of suppressed trauma as well as provides a grounding effect, counteracting feelings of fear and hypervigilance."
+
+            firstAction = "5-4-3-2-1 Method: Identify five things you can see, four you can touch, three you can hear, two you can smell, and one you can taste to stay grounded in the present."
+            secondAction = "Deep Breathing: Practice slow, deep breaths to reduce anxiety. For example, inhale for 4 counts, hold for 4, exhale for 4, and hold for 4 (box breathing)."
+            thirdAction = "Morning Rituals: Start the day with a calming activity, such as journaling or stretching, to set a positive tone."
+            forthAction = "Nighttime Wind-Down: Create a bedtime routine involving calming activities, such as reading or drinking herbal tea, to improve sleep quality."
+        elif(most_likely_disorder == "Schizophrenia"):
+            raag = "Kalyan"
+            TOD = "evening, just after sunset"
+
+            song1 = "Bare Bare Aar Asa Hobena"
+            link1 = "https://open.spotify.com/track/1ZRHOQ2Ciikozn4jrruJmp"
+
+            song2 = "Lal Ke Keno Bhoy"
+            link2 = "https://open.spotify.com/track/607li9G8YMzWrdydgI9OcB"
+
+            song3 = "Loke Bole Lalon Fakir"
+            link3 = "https://open.spotify.com/track/06sQAV5rnZMqWU3tEdRRoZ"
+
+            desc = "Raaga Kalyan is known for its majestic and calming essence. It combines natural and harmonic notes that create a soothing and contemplative atmosphere. The calming melodies can ease episodes of restlessness or anxiety, and encourages focus and reduces intrusive or fragmented thoughts. However we also suggest that along with listening to these songs you seek professional help and therapy support."
+
+            firstAction = "Family and Friends: Maintain close relationships with trusted individuals who provide emotional support."
+            secondAction = "Reading or Audiobooks: Explore uplifting or educational material to stay mentally active."
+            thirdAction = "Establishing Hygiene Routines: Create a checklist for daily self-care tasks like bathing, grooming, and dressing."
+            forthAction = "Cognitive Behavioral Therapy (CBT): Work with a therapist to address delusional thinking or distressing emotions."
+
+        #Adding the latest predicted data in responses table
+        
+
+
+        session['premium'] = user
+        session['disorder'] = most_likely_disorder
+        session['link1'] = link1
+        session['link2'] = link2
+        session['link3'] = link3
+        session['desc'] = desc
+        session['a1'] = firstAction
+        session['a2'] = secondAction
+        session['a3'] = thirdAction
+        session['a4'] = forthAction
+        session['s1'] = song1
+        session['s2'] = song2
+        session['s3'] = song3
+        session['raag'] = raag
+        session['tod'] = TOD
+
+
+
+
+
+        # Pass prediction to result page
+        return render_template('result.html',name=session['firstname'],user=user, prediction=most_likely_disorder,link1=link1,link2=link2,link3=link3,description=desc,actions1=firstAction,actions2=secondAction,actions3=thirdAction,actions4=forthAction,song1=song1,song2=song2,song3=song3, raaga=raag,timeOfDay=TOD)
+    
+    
+     # membership
+@app.route('/membership', methods=['POST'])
+def membership():
+        if request.method == 'POST':    
+            return render_template('membership.html',key_id=RAZORPAY_KEY_ID)
+
+@app.route('/verify', methods=['POST'])
+def verify_payment():
+    #Get Data From Razorpay checkout
+        payment_id = request.form.get("razorpay_payment_id")
+        order_id = request.form.get("razorpay_order_id")
+        signature = request.form.get("razorpay_signature")
+        #Verify signature
+        try:
+            razorpay_client.utility.verify_payment_signature({
+                "razorpay_payment_id": payment_id,
+                "razorpay_order_id": order_id,
+                "razorpay_signature": signature
+            })
+            #Update membership status
+            user_id = session['user_id']
+            cur = sql_connection.cursor()
+            cur.execute('UPDATE users SET membership = "active" WHERE id = %s', (user_id,))
+            sql_connection.commit()
+            session['membership'] = "active"
+            flash("Membership activated successfully!", "success")
+            #return redirect(url_for('home'))
+            return render_template('result.html',name=session['firstname'],user={'is_member':True}, prediction=session['disorder'],link1=session['link1'],link2=session['link2'],link3=session['link3'],description=session['desc'],actions1=session['a1'],actions2=session['a2'],actions3=session['a3'],actions4=session['a4'],song1=session['s1'],song2=session['s2'],song3=session['s3'], raaga=session['raag'],timeOfDay=session['tod'])
+        except razorpay.errors.SignatureVerificationError:
+            flash("Signature verification failed", "error")
+            return render_template('membership.html',key_id=RAZORPAY_KEY_ID)
+
+        
+@app.route('/order', methods=['POST'])
+def create_order():
+    if 'loggedin' in session:
+        amount = 9900 #In Paise
+        currency = "INR"
+
+        order_data = {"amount":amount,
+                      "currency":currency }
+        razorpay_order = razorpay_client.order.create(data=order_data)
+        return{"order_id":razorpay_order['id'],"amount":amount}
+    else:
+        flash('Please log in to purchase membership.', 'error')
+        return redirect(url_for('login.html'))
 
 # Capture page
 @app.route('/capture')
@@ -281,11 +692,6 @@ def admin():
     feedback_data = get_google_form_responses()
     
     return render_template('admin.html', users=users, feedback_data=feedback_data)
-
-
-
-
-
 
 
 # Logout
