@@ -54,11 +54,16 @@
         <p>Q2 Score: {{ q2 }}</p>
         <p>Q3 Score: {{ q3 }}</p>
 
-        <form action="{{ url_for('generate_playlist') }}" method="POST">
-            <label for="playlist_name">Name your playlist:</label><br>
-            <input type="text" id="playlist_name" name="playlist_name" placeholder="Enter playlist name" required><br>
+        <form method="POST" action="{{ url_for('generate_playlist') }}">
+            <label for="playlist_name">Enter Playlist Name:</label>
+            <input type="text" id="playlist_name" name="playlist_name" required>
+        
+            <!-- Optional: Mood input if not hardcoded -->
             <input type="hidden" name="mood" value="sad">
+        
             <button type="submit">Generate Playlist</button>
+        </form>
+        
         </form>
     </div>
 </body>

@@ -20,6 +20,9 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+from bson.objectid import ObjectId
 
 
 # Initialize Flask app
@@ -46,11 +49,10 @@ uri = "mongodb+srv://abhirajbanerjee02:6Kto5LxwDqchjAc0@cluster-chronotunes.pkxx
 mongoClient = MongoClient(uri, server_api=ServerApi('1'))
 collection = mongoClient['users']['chronoTunes']
 song_db = mongoClient['songs']
+playlist_collection = mongoClient['mood_detection_playlist_data']['user_playlists']
+ 
 
 # Spotify Credentials
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
-
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
     client_id="9e1b5aca31eb4ec78abccccb05846c40",
     client_secret="c502b9cb165c476db22e415dbce3b886"
@@ -84,12 +86,11 @@ def generate_playlist():
         flash('Please log in to continue.', 'error')
         return redirect(url_for('login'))
 
-    mood = request.form.get('mood', 'sad')  # for now, hardcoded to sad
+    mood = request.form.get('mood', 'sad')
     playlist_name = request.form.get('playlist_name')
-    genre = 'classical'  # default genre
+    genre = 'classical'
     playlist_length = 10
 
-    # Define thaat for sad mood
     thaat = ['Bhairavi', 'Bhairav', 'Kafi', 'Bilawal', 'Todi']
     songs = song_db[genre].find({"thaat": {"$in": thaat}}, {'filename': 1})
     filenames = [song['filename'] for song in songs if 'filename' in song]
@@ -116,10 +117,97 @@ def generate_playlist():
                     track_url = top_track['external_urls']['spotify']
                     audio_files.append({'name': song_name, 'url': track_url})
             except Exception as e:
-                print(f"Spotify search error for {song_name}: {e}")
+                print(f"[Spotify ERROR] {song_name}: {e}")
+
+    # ✅ User info
+    user_id = session.get('user_id')
+    username = session.get('username')
+
+    # ✅ Prevent duplicate playlist names
+    existing = playlist_collection.find_one({
+        'user_id': user_id,
+        'playlist_name': playlist_name
+    })
+
+    if existing:
+        return '''
+            <script>
+                alert("You already have a playlist with this name. Please choose another name.");
+                window.history.back();
+            </script>
+        '''
+
+    # ✅ Save to MongoDB
+    if user_id and playlist_name and audio_files:
+        playlist_doc = {
+            'user_id': user_id,
+            'username': username,
+            'playlist_name': playlist_name,
+            'mood': mood,
+            'genre': genre,
+            'created_at': datetime.utcnow(),
+            'songs': audio_files
+        }
+        try:
+            result = playlist_collection.insert_one(playlist_doc)
+            print(f"[MongoDB] Playlist saved with ID: {result.inserted_id}")
+        except Exception as e:
+            print(f"[MongoDB ERROR] Could not insert playlist: {e}")
 
     return render_template('playlist.html', playlist_name=playlist_name, audio_files=audio_files)
 
+
+
+#users can see their previous playlists
+@app.route('/my_playlists')
+def my_playlists():
+    if 'loggedin' not in session:
+        flash('Please log in to view your playlists.', 'error')
+        return redirect(url_for('login'))
+
+    try:
+        playlist_db = mongoClient['mood_detection_playlist_data']['user_playlists']
+        user_id = session.get('user_id')
+        playlists = list(playlist_db.find({"user_id": user_id}))
+        return render_template('my_playlists.html', playlists=playlists)
+    except Exception as e:
+        flash(f"Error fetching playlists: {e}", 'error')
+        return render_template('my_playlists.html', playlists=[])
+
+
+
+
+#On clicking a particular playlist name,user can view the entire playlist
+@app.route('/playlist/<playlist_id>')
+def view_playlist(playlist_id):
+    if 'loggedin' not in session:
+        flash('Please log in to view playlists.', 'error')
+        return redirect(url_for('login'))
+
+    try:
+        playlist = playlist_collection.find_one({"_id": ObjectId(playlist_id)})
+        if not playlist:
+            flash("Playlist not found.", "error")
+            return redirect(url_for('my_playlists'))
+        return render_template('view_playlist.html', playlist=playlist)
+    except Exception as e:
+        flash(f"Error loading playlist: {e}", 'error')
+        return redirect(url_for('my_playlists'))
+
+
+
+@app.route('/test_insert')
+def test_insert():
+    doc = {
+        'user_id': 123,
+        'playlist_name': 'Test Playlist',
+        'mood': 'happy',
+        'genre': 'classical',
+        'created_at': datetime.utcnow(),
+        'songs': [{'name': 'Test Song', 'url': 'http://example.com'}]
+    }
+    result = playlist_collection.insert_one(doc)
+    return f"Inserted test playlist with ID: {result.inserted_id}"
 
 
 #/submit ROUTE TO HARD-CODE SAD MOOD
@@ -154,6 +242,8 @@ def process_mood():
                 {'name': file['name'], 'url': f"https://drive.google.com/file/d/{file['id']}/view"}
                 for file in items if file['name'].replace('.mp3', '.pickle') in selected
             ]
+            
+            
 
             return render_template("Result2.html", q1=q1, q2=q2, q3=q3, audio_files=audio_files)
 

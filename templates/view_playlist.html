@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ playlist.playlist_name }} - Playlist</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+
+        .meta {
+            font-size: 0.95em;
+            margin-bottom: 20px;
+            color: #666;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        li {
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #28a745;
+            border-radius: 6px;
+        }
+
+        a.song-link {
+            color: #007bff;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        a.song-link:hover {
+            text-decoration: underline;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 16px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .back-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>{{ playlist.playlist_name }}</h2>
+        <div class="meta">
+            <strong>Mood:</strong> {{ playlist.mood }}<br>
+            <strong>Genre:</strong> {{ playlist.genre }}<br>
+            <strong>Created:</strong> {{ playlist.created_at.strftime("%Y-%m-%d %H:%M") }}
+        </div>
+
+        <ul>
+            {% for song in playlist.songs %}
+                <li>
+                    <a href="{{ song.url }}" target="_blank" class="song-link">{{ song.name }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <a href="{{ url_for('my_playlists') }}" class="back-btn">← Back to All Playlists</a>
+    </div>
+</body>
+</html>

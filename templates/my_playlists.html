@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Playlists</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #444;
+            margin-bottom: 30px;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        li {
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+            border-left: 5px solid #007bff;
+            border-radius: 6px;
+        }
+
+        a.playlist-link {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        a.playlist-link:hover {
+            text-decoration: underline;
+        }
+
+        .created-time {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 16px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .back-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Your Saved Playlists</h2>
+
+        {% if playlists %}
+            <ul>
+                {% for p in playlists %}
+                    <li>
+                        <a href="{{ url_for('view_playlist', playlist_id=p._id) }}" class="playlist-link">
+                            {{ p.playlist_name }}
+                        </a>
+                        <div class="created-time">
+                            Created on {{ p.created_at.strftime("%Y-%m-%d %H:%M") }}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No playlists saved yet.</p>
+        {% endif %}
+
+        <a href="{{ url_for('home') }}" class="back-btn">← Back to Home</a>
+    </div>
+</body>
+</html>
