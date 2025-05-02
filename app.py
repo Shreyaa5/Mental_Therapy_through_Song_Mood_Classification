@@ -23,6 +23,9 @@ from google.oauth2 import service_account
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from bson.objectid import ObjectId
+from flask import Flask, jsonify
+from bson import ObjectId
+from bson.errors import InvalidId
 
 
 # Initialize Flask app
@@ -792,6 +795,23 @@ def logout():
     return redirect(url_for('login'))
 
 # (Other diagnosis, membership, admin routes same as your original file)
+
+
+#delete function
+@app.route('/delete_playlist/<playlist_id>', methods=['DELETE'])
+def delete_playlist(playlist_id):
+    try:
+        oid = ObjectId(playlist_id)
+    except InvalidId:
+        return jsonify({'error': 'Invalid playlist ID'}), 400
+
+    result = playlist_collection.delete_one({'_id': oid})
+    if result.deleted_count == 1:
+        return jsonify({'success': True}), 200
+    else:
+        return jsonify({'error': 'Playlist not found'}), 404
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

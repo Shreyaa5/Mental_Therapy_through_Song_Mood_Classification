@@ -7,7 +7,9 @@
     <style>
         body {
             font-family: Verdana, Geneva, Tahoma, sans-serif;
-            background-image: url("/static/images/background.jpg");
+            /* background-image: url("/static/images/background.jpg"); */
+            background-image: radial-gradient(circle, rgba(105, 231, 210, 0.8), rgba(255, 255, 255, 0.5));
+            background-color: #DAF0F7; /* Fallback color */
             background-size: cover;
             background-repeat: no-repeat;
             background-attachment: fixed;
@@ -15,7 +17,7 @@
             padding: 20px;
         }
         .container {
-            background-color: rgb(228, 195, 128);
+            background-color: #DAF0F7; /* Fallback color */
             max-width: 500px;
             margin: auto;
             padding: 20px;
@@ -61,12 +63,29 @@
         const photo = document.getElementById('photo');
         const captureButton = document.getElementById('capture');
         const submitButton = document.getElementById('submitBtn');
+        
+
+        let stream;
+
 
         // Set up camera
         navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => video.srcObject = stream)
-            .catch(err => console.error('Camera error:', err));
+        .then(s => {
+            stream = s;
+            video.srcObject = stream;
+        })
+        .catch(err => {
+            console.error('Camera error:', err);
+            alert('Failed to access webcam.');
+        });
 
+        // Stop camera stream
+         function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        }
+        
         // Capture image
         captureButton.addEventListener('click', () => {
             const MAX_WIDTH = 400;
@@ -76,16 +95,17 @@
             canvas.height = MAX_HEIGHT;
             context.drawImage(video, 0, 0, MAX_WIDTH, MAX_HEIGHT);
 
-            // Show preview
+        // Show preview
             photo.src = canvas.toDataURL('image/jpeg', 0.7);
             photo.style.display = 'block';
 
-            // Show the Next button after capturing
+        // Show the Next button after capturing
             submitButton.style.display = 'inline-block';
         });
 
         // Send image to Flask and render questions page
         submitButton.addEventListener('click', () => {
+            stopCamera(); // Stop the camera stream
             const base64Image = canvas.toDataURL('image/jpeg', 0.7);
 
             fetch('/save_captured_image', {
@@ -95,7 +115,7 @@
             })
             .then(response => response.text()) // Expecting HTML now
             .then(html => {
-                // Replace current page content with new HTML
+        // Replace current page content with new HTML
                 document.open();
                 document.write(html);
                 document.close();
