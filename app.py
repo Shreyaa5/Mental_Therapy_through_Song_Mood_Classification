@@ -151,11 +151,10 @@ def generate_playlist():
             except Exception as e:
                 print(f"[Spotify ERROR] {song_name}: {e}")
 
-    # ✅ User info
     user_id = session.get('user_id')
     username = session.get('username')
 
-    # ✅ Prevent duplicate playlist names
+    # ✅ Check if playlist name already exists
     existing = playlist_collection.find_one({
         'user_id': user_id,
         'playlist_name': playlist_name
@@ -169,27 +168,38 @@ def generate_playlist():
             </script>
         '''
 
+    # ✅ Membership enforcement logic
+    playlist_count = playlist_collection.count_documents({'user_id': user_id})
+    is_premium = session.get('membership') == 'active'
+
+    print(f"[DEBUG] User ID: {user_id}, Membership: {session.get('membership')}, Playlist Count: {playlist_count}")
+
+    if not is_premium and playlist_count >= 3:
+        flash("Free users can only create 3 playlists. Upgrade to Premium to create more.", "error")
+        return redirect(url_for('membership'))  # or your payment page
+
     # ✅ Save to MongoDB
     if user_id and playlist_name and audio_files:
         playlist_doc = {
-    'user_id': user_id,
-    'username': username,
-    'playlist_name': playlist_name,
-    'mood': mood,
-    'genre': genre,
-    'created_at': datetime.utcnow(),
-    'songs': audio_files,
-    'membership': 'Premium' if session.get('membership') == 'active' else 'Free'
-}
+            'user_id': user_id,
+            'username': username,
+            'playlist_name': playlist_name,
+            'mood': mood,
+            'genre': genre,
+            'created_at': datetime.utcnow(),
+            'songs': audio_files,
+            'membership': 'Premium' if is_premium else 'Free'
+        }
 
         try:
             result = playlist_collection.insert_one(playlist_doc)
             print(f"[MongoDB] Playlist saved with ID: {result.inserted_id}")
         except Exception as e:
             print(f"[MongoDB ERROR] Could not insert playlist: {e}")
+            flash("An error occurred while saving your playlist.", "error")
+            return redirect(url_for('home'))
 
     return render_template('playlist.html', playlist_name=playlist_name, audio_files=audio_files)
-
 
 
 #users can see their previous playlists
@@ -550,11 +560,16 @@ def predict():
         return render_template('result.html',name=session['firstname'],user=user, prediction=most_likely_disorder,link1=link1,link2=link2,link3=link3,description=desc,actions1=firstAction,actions2=secondAction,actions3=thirdAction,actions4=forthAction,song1=song1,song2=song2,song3=song3, raaga=raag,timeOfDay=TOD)
     
     
-     # membership
-@app.route('/membership', methods=['POST'])
+# membership
+@app.route('/membership', methods=['GET', 'POST'])
 def membership():
-        if request.method == 'POST':    
-            return render_template('membership.html',key_id=RAZORPAY_KEY_ID)
+    if 'loggedin' not in session:
+        flash('Please log in to purchase membership.', 'error')
+        return redirect(url_for('login'))
+    next_page = request.args.get('next', '/')
+    return render_template('membership.html', key_id=RAZORPAY_KEY_ID, next=next_page)
+
+
 
 @app.route('/verify', methods=['POST'])
 def verify_payment():
@@ -562,6 +577,7 @@ def verify_payment():
         payment_id = request.form.get("razorpay_payment_id")
         order_id = request.form.get("razorpay_order_id")
         signature = request.form.get("razorpay_signature")
+        next_page = request.form.get("next") or url_for('home')
         #Verify signature
         try:
             razorpay_client.utility.verify_payment_signature({
@@ -576,8 +592,9 @@ def verify_payment():
             sql_connection.commit()
             session['membership'] = "active"
             flash("Membership activated successfully!", "success")
-            #return redirect(url_for('home'))
-            return render_template('result.html',name=session['firstname'],user={'is_member':True}, prediction=session['disorder'],link1=session['link1'],link2=session['link2'],link3=session['link3'],description=session['desc'],actions1=session['a1'],actions2=session['a2'],actions3=session['a3'],actions4=session['a4'],song1=session['s1'],song2=session['s2'],song3=session['s3'], raaga=session['raag'],timeOfDay=session['tod'])
+
+            return redirect(url_for('home'))
+            # return render_template('result.html',name=session['firstname'],user={'is_member':True}, prediction=session['disorder'],link1=session['link1'],link2=session['link2'],link3=session['link3'],description=session['desc'],actions1=session['a1'],actions2=session['a2'],actions3=session['a3'],actions4=session['a4'],song1=session['s1'],song2=session['s2'],song3=session['s3'], raaga=session['raag'],timeOfDay=session['tod'])
         except razorpay.errors.SignatureVerificationError:
             flash("Signature verification failed", "error")
             return render_template('membership.html',key_id=RAZORPAY_KEY_ID)
@@ -595,7 +612,7 @@ def create_order():
         return{"order_id":razorpay_order['id'],"amount":amount}
     else:
         flash('Please log in to purchase membership.', 'error')
-        return redirect(url_for('login.html'))
+        return redirect(url_for('login'))
 
 # Capture page
 @app.route('/capture')
