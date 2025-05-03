@@ -7,37 +7,57 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            /* background-color: #DAF0F7; */
             background-image: url("/static/images/questionbg.jpg");
-            background-size: 100%;
+            background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
             text-align: center;
-            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .container {
-            background: transparent;
-            max-width: 600px;
-            margin: 50px auto;
+            background: rgba(255, 255, 255, 0.9);
+            max-width: 100%;
+            width: 700px;
+            margin: 0;
             padding: 20px;
             border-radius: 20px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
         h2 {
             color: #333;
+            font-size: 1.8em;
         }
         label {
             font-weight: bold;
             display: block;
-            margin-top: 30px;
+            margin-top: 20px;
             margin-bottom: 5px;
+            font-size: 1.1em;
         }
-        input {
+        input[type="text"] {
             width: 90%;
             padding: 10px;
             margin-top: 5px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            font-size: 1em;
+        }
+        .radio-group {
+            margin: 20px 0;
+            text-align: left;
+            padding-left: 5%;
+        }
+        .radio-group input[type="radio"] {
+            margin-right: 10px;
+        }
+        .radio-group label {
+            font-weight: normal;
+            margin-right: 20px;
+            display: inline-block;
         }
         button {
             background-color: #28a745;
@@ -46,9 +66,10 @@
             padding: 10px 15px;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
-            margin-top: 25px;
+            font-size: 1em;
+            margin-top: 20px;
             width: 100%;
+            transition: background-color 0.3s;
         }
         button:hover {
             background-color: #12a174;
@@ -59,6 +80,27 @@
             object-fit: contain;
             border-radius: 10px;
             margin-bottom: 20px;
+        }
+        .error-message {
+            color: red;
+            font-size: 0.9em;
+            margin-top: 10px;
+            display: none;
+        }
+        @media (max-width: 500px) {
+            h2 {
+                font-size: 1.5em;
+            }
+            label {
+                font-size: 1em;
+            }
+            input[type="text"], button {
+                font-size: 0.9em;
+                padding: 8px;
+            }
+            .container {
+                padding: 15px;
+            }
         }
     </style>
 </head>
@@ -71,18 +113,102 @@
                  alt="Captured Image" class="captured-img">
         {% endif %}
 
-        <form action="{{ url_for('submit') }}" method="POST">
+        <form action="{{ url_for('submit') }}" method="POST" id="mood-form">
             <label for="q1">How are you feeling today?</label>
-            <input type="text" id="q1" name="question1" placeholder="Enter your mood..." required>
+            <input type="text" id="q1" name="question1" placeholder="Enter your mood..." 
+                   aria-label="Enter your current mood" maxlength="200" required>
 
             <label for="q2">What is something that made you happy recently?</label>
-            <input type="text" id="q2" name="question2" placeholder="Describe a happy moment..." required>
+            <input type="text" id="q2" name="question2" placeholder="Describe a happy moment..." 
+                   aria-label="Describe a recent happy moment" maxlength="200" required>
 
-            <label for="q3">Do you prefer energetic or calming music right now?</label>
-            <input type="text" id="q3" name="question3" placeholder="Energetic or calming?" required>
+            <label>Do you prefer energetic or calming music right now?</label>
+            <div class="radio-group">
+                <input type="radio" id="energetic" name="question3" value="energetic" 
+                       aria-label="Energetic music" required>
+                <label for="energetic">Energetic</label>
+                <input type="radio" id="calming" name="question3" value="calming" 
+                       aria-label="Calming music">
+                <label for="calming">Calming</label>
+            </div>
 
+            <div class="error-message" id="error-message"></div>
             <button type="submit">Submit</button>
         </form>
     </div>
+
+    <script>
+        // Check if notifications are supported
+        if ("Notification" in window) {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    console.log("Notifications granted.");
+                    setDailyMoodReminder();
+                } else {
+                    console.warn("Notifications denied by user.");
+                }
+            }).catch(err => {
+                console.error("Notification permission error:", err);
+            });
+        } else {
+            console.warn("Notifications not supported in this browser.");
+        }
+
+        // Function to schedule daily mood reminder at 9 PM
+        function setDailyMoodReminder() {
+            const now = new Date();
+            const nextReminderTime = new Date();
+            nextReminderTime.setHours(21, 0, 0, 0); // 9 PM every day
+
+            if (nextReminderTime < now) {
+                nextReminderTime.setDate(nextReminderTime.getDate() + 1);
+            }
+
+            const timeUntilNextReminder = nextReminderTime - now;
+            console.log(`Next reminder scheduled for: ${nextReminderTime}`);
+
+            setTimeout(() => {
+                try {
+                    new Notification("Time to log your mood!", {
+                        body: "Don't forget to log your mood today! 😃",
+                        icon: "/static/images/reminder_icon.png"
+                    });
+                } catch (err) {
+                    console.error("Notification display error:", err);
+                }
+                setDailyMoodReminder(); // Reschedule for next day
+            }, timeUntilNextReminder);
+        }
+
+        // Form validation
+        const form = document.getElementById("mood-form");
+        const errorMessage = document.getElementById("error-message");
+
+        form.addEventListener("submit", (e) => {
+            const q1 = document.getElementById("q1").value.trim();
+            const q2 = document.getElementById("q2").value.trim();
+            const q3 = document.querySelector('input[name="question3"]:checked');
+
+            if (!q1 || !q2 || !q3) {
+                e.preventDefault();
+                errorMessage.textContent = "Please fill out all fields.";
+                errorMessage.style.display = "block";
+                return;
+            }
+
+            if (q1.length > 200 || q2.length > 200) {
+                e.preventDefault();
+                errorMessage.textContent = "Responses must be 200 characters or less.";
+                errorMessage.style.display = "block";
+                return;
+            }
+
+            errorMessage.style.display = "none";
+        });
+
+        // Polyfill for object-fit (optional for older browsers)
+        // Consider including: <script src="https://cdnjs.cloudflare.com/ajax/libs/object-fit-images/3.2.4/ofi.min.js"></script>
+        
+    </script>
 </body>
 </html>
