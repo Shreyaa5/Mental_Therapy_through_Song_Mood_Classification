@@ -172,14 +172,16 @@ def generate_playlist():
     # ✅ Save to MongoDB
     if user_id and playlist_name and audio_files:
         playlist_doc = {
-            'user_id': user_id,
-            'username': username,
-            'playlist_name': playlist_name,
-            'mood': mood,
-            'genre': genre,
-            'created_at': datetime.utcnow(),
-            'songs': audio_files
-        }
+    'user_id': user_id,
+    'username': username,
+    'playlist_name': playlist_name,
+    'mood': mood,
+    'genre': genre,
+    'created_at': datetime.utcnow(),
+    'songs': audio_files,
+    'membership': 'Premium' if session.get('membership') == 'active' else 'Free'
+}
+
         try:
             result = playlist_collection.insert_one(playlist_doc)
             print(f"[MongoDB] Playlist saved with ID: {result.inserted_id}")
