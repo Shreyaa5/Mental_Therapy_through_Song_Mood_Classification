@@ -248,6 +248,9 @@
                 <a href="#home">Home</a>
                 <a href="#about">About</a>
                 <a href="#contact">Contact</a>
+                {% if session['loggedin'] %}
+                <a href="{{ url_for('profile', user_id=session['user_id']) }}">Profile</a>
+                {% endif %}
                 <form action="/logout" method="post">
                     <button type="submit">Log out</button>
                 </form>

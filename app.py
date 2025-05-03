@@ -26,6 +26,7 @@ from bson.objectid import ObjectId
 from flask import Flask, jsonify
 from bson import ObjectId
 from bson.errors import InvalidId
+from flask_pymongo import PyMongo
 
 
 # Initialize Flask app
@@ -46,6 +47,7 @@ sql_connection = mysql.connector.connect(
     port="3316"
 )
 
+
 # 🔗 MongoDB connection (added from ChronoTunes)
 key = "6Kto5LxwDqchjAc0"
 uri = "mongodb+srv://abhirajbanerjee02:6Kto5LxwDqchjAc0@cluster-chronotunes.pkxxz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster-ChronoTunes"
@@ -61,7 +63,34 @@ sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
     client_secret="c502b9cb165c476db22e415dbce3b886"
 ))
 
+###########################################################################################################################
+# MongoDB connection
+app.config['MONGO_URI'] = "mongodb+srv://abhirajbanerjee02:6Kto5LxwDqchjAc0@cluster-chronotunes.pkxxz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster-ChronoTunes"
+mongo = PyMongo(app)
+db = mongo.db  # ✅ This defines 'db'
 
+#profile page
+@app.route('/profile')
+def profile():
+    if 'user_id' not in session:
+        flash('Please log in to view your profile.', 'error')
+        return redirect(url_for('login'))
+
+    try:
+        user_id = ObjectId(session['user_id'])  # ✅ safely convert to ObjectId
+        user = db.users.find_one({'_id': user_id})
+    except Exception as e:
+        flash('Invalid user ID.', 'error')
+        return redirect(url_for('login'))
+
+    if not user:
+        flash('No user data found.', 'error')
+        return redirect(url_for('login'))
+
+    return render_template('profile.html', user=user)
+
+
+######################################################################################################################################
 
 # 🔗 Google Drive API for audio streaming
 def create_drive_service():
@@ -790,9 +819,11 @@ def admin():
 # Logout
 @app.route('/logout', methods=['POST'])
 def logout():
-    session.clear()
-    flash("Logged out successfully!", "logout")
-    return redirect(url_for('login'))
+    session.pop('user_id', None)  # Remove user_id from session
+    flash('You have been logged out.', 'logout') 
+    return redirect(url_for('login')) 
+
+
 
 # (Other diagnosis, membership, admin routes same as your original file)
 
