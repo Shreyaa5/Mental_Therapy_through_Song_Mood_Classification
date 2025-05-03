@@ -47,10 +47,8 @@ sql_connection = mysql.connector.connect(
 )
 
 # 🔗 MongoDB connection (added from ChronoTunes)
-key = "6Kto5LxwDqchjAc0"
-uri = "mongodb+srv://abhirajbanerjee02:6Kto5LxwDqchjAc0@cluster-chronotunes.pkxxz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster-ChronoTunes"
+uri = "mongodb+srv://mental_health_and_mood_prediction:f8xgZrY3kve5pO7k@cluster-mentalhealth.smn3odz.mongodb.net/"
 mongoClient = MongoClient(uri, server_api=ServerApi('1'))
-collection = mongoClient['users']['chronoTunes']
 song_db = mongoClient['songs']
 playlist_collection = mongoClient['mood_detection_playlist_data']['user_playlists']
  
