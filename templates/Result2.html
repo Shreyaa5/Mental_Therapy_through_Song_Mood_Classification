@@ -51,8 +51,8 @@
         <h1>Mood Diagnosis Complete</h1>
         <p>Your mood has been identified as <strong>{{ mood }}</strong>.</p>
         <p>Q1 Score: {{ q1 }}</p>
-        <p>Q2 Score: {{ q2 }}</p>
-        <p>Q3 Score: {{ q3 }}</p>
+        <!-- <p>Q2 Score: {{ q2 }}</p>
+        <p>Q3 Score: {{ q3 }}</p> -->
 
         <form method="GET" action="{{ url_for('generate_playlist') }}">
             <label for="playlist_name">Enter Playlist Name:</label>

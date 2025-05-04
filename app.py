@@ -259,25 +259,32 @@ def test_insert():
     return f"Inserted test playlist with ID: {result.inserted_id}"
 
 def getMoodUsingML(text_ans, filePath):
+    filePath = str(filePath)
+    
     model_NLP = AutoModelForSequenceClassification.from_pretrained("NLPModel")
     tokenizer = AutoTokenizer.from_pretrained("NLP_tokenizer")
     nlp_pipeline = pipeline("text-classification", model=model_NLP, tokenizer=tokenizer, return_all_scores=True)
     nlp_result = nlp_pipeline(text_ans)
+    
 
-    frame = cv2.imread(filePath)
+    frame = cv2.imread(filePath.replace("\\", "/" ))
+
+    if frame is None:
+        print("Frame is returning None")
+        return "Frame returning None"
+    else:
+        print("Frame Found")
+    
     faceCascacde = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
     grayImg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = faceCascacde.detectMultiScale(grayImg, 1.1, 4)
-    for x,y,w,h in faces:
-        roi_gray = grayImg[y:y+h, x:x+w]
-        roi_color = frame[y:y+h, x:x+w]
-        cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
-        facess = faceCascacde.detectMultiScale(roi_gray)
-        if(len(facess) == 0):
-            print("No face found")
-        else:
-            for (ex, ey, ew, eh) in facess:
-                face_roi = roi_color[ey:ey+eh, ex:ex+ew]
+    print("Number of faces detected = ", len(faces))
+    
+    
+    for (x, y, w, h) in faces:
+        face_roi = frame[y:y+h, x:x+w]
+        print("Trying FACE_ROI")
+        break
     
     final_image = cv2.resize(face_roi, (224, 224))
     final_image = np.expand_dims(final_image, axis=0)
@@ -285,43 +292,52 @@ def getMoodUsingML(text_ans, filePath):
     
     imgModel = tf.keras.models.load_model('imageModel3.h5')
     image_result = imgModel.predict(final_image)
-
+    
+    # Ensure that we are processing the outputs correctly
     final_probability_list = [0, 0, 0, 0]
+    
     for i in range(len(nlp_result[0])):
         final_probability_list[i] = (0.6 * nlp_result[0][i]['score']) + (0.4 * image_result[0][i])
     
     dominant_index = np.argmax(final_probability_list)
-    if(dominant_index == 0):
+    
+    if dominant_index == 0:
         return "Angry"
-    elif(dominant_index == 1):
+    elif dominant_index == 1:
         return "Happy"
-    elif(dominant_index == 2):
+    elif dominant_index == 2:
         return "Neutral"
-    elif(dominant_index == 3):
+    elif dominant_index == 3:
         return "Sad"
 
 
-# 📍 Processing of mood
+# Processing of mood
+#FILE PATH NEEDS TO BE EDITED GET /static/static\\captured_images\\capture_20250504_205610.jpg HTTP/1.1
 @app.route('/process_mood', methods=['POST'])
 def process_mood():
     if request.method == 'POST':
         try:
             q1 = request.form.get("question1")
-            q2 = request.form.get("question2")
-            q3 = request.form.get("question3")
+            # q2 = request.form.get("question2")
+            # q3 = request.form.get("question3")
+
+            print(q1)
             #score = q1 + q2 + q3
             #session['score'] = score
-
+            image_path = str(session.get('captured_image'))
+            final_img_path = image_path.replace("\\", "/")
+            print(final_img_path)
             # Only considering Q1 for NLP evaluation
-            mood = getMoodUsingML(q1, session.get('captured_image'))  # Returns a string
-            print("Detected mood: {mood}")  # This line prints the mood to the console
+            mood = getMoodUsingML(q1, final_img_path)  # Returns a string
+            print(f"Detected mood: {mood}")  # This line prints the mood to the console
+            session['mood_playlist'] = mood
 
             # Store the mood and question responses for display in result template
-            return render_template("Result2.html", mood=mood, q1=q1, q2=q2, q3=q3)
+            return render_template("Result2.html", mood=mood, q1=q1)
 
         except Exception as e:
             flash(f"Error processing form: {str(e)}", "message")
-            return render_template('questions.html')
+            return render_template('questions.html', image_path=final_img_path)
 
 
 RAZORPAY_KEY_ID = "rzp_test_iXumXBu7UMOLEf"
@@ -670,7 +686,7 @@ def save_captured_image():
         cv2.imwrite(filepath, img)
 
         session['captured_image'] = filepath
-        return render_template('questions.html')
+        return render_template('questions.html', image_path = filepath)
 
     except Exception as e:
         return {'status': 'error', 'message': str(e)}
