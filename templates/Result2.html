@@ -49,21 +49,19 @@
 <body>
     <div class="container">
         <h1>Mood Diagnosis Complete</h1>
-        <p>Your mood has been identified as <strong>Sad</strong>.</p>
+        <p>Your mood has been identified as <strong>{{ mood }}</strong>.</p>
         <p>Q1 Score: {{ q1 }}</p>
         <p>Q2 Score: {{ q2 }}</p>
         <p>Q3 Score: {{ q3 }}</p>
 
-        <form method="POST" action="{{ url_for('generate_playlist') }}">
+        <form method="GET" action="{{ url_for('generate_playlist') }}">
             <label for="playlist_name">Enter Playlist Name:</label>
             <input type="text" id="playlist_name" name="playlist_name" required>
         
-            <!-- Optional: Mood input if not hardcoded -->
-            <input type="hidden" name="mood" value="sad">
+            <input type="hidden" name="mood" value="{{ mood }}">
         
             <button type="submit">Generate Playlist</button>
         </form>
-        
     </div>
 </body>
 </html>

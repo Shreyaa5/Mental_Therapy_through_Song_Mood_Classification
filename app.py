@@ -116,19 +116,22 @@ def get_folder_id(genre):
     }
     return mapping.get(genre.lower(), '')
 
-## 🎵 Route to get playlist based on mood (hardcoded as sad) and raga
-@app.route('/generate_playlist', methods=['POST'])
+## 🎵 Route to get playlist based on mood and raga
+@app.route('/generate_playlist', methods=['GET'])
 def generate_playlist():
     if 'loggedin' not in session:
         flash('Please log in to continue.', 'error')
         return redirect(url_for('login'))
 
-    mood = request.form.get('mood', 'sad')
-    playlist_name = request.form.get('playlist_name')
+    mood = request.args.get('mood')
+    playlist_name = request.args.get('playlist_name', 'Your Playlist')
     genre = 'classical'
     playlist_length = 10
 
+    # mapping if needed [abhiraj]
+    # For now, given a general thaat list for all moods
     thaat = ['Bhairavi', 'Bhairav', 'Kafi', 'Bilawal', 'Todi']
+
     songs = song_db[genre].find({"thaat": {"$in": thaat}}, {'filename': 1})
     filenames = [song['filename'] for song in songs if 'filename' in song]
 
@@ -159,7 +162,6 @@ def generate_playlist():
     user_id = session.get('user_id')
     username = session.get('username')
 
-    # ✅ Check if playlist name already exists
     existing = playlist_collection.find_one({
         'user_id': user_id,
         'playlist_name': playlist_name
@@ -173,7 +175,6 @@ def generate_playlist():
             </script>
         '''
 
-    # ✅ Membership enforcement logic
     playlist_count = playlist_collection.count_documents({'user_id': user_id})
     is_premium = session.get('membership') == 'active'
 
@@ -181,9 +182,8 @@ def generate_playlist():
 
     if not is_premium and playlist_count >= 3:
         flash("Free users can only create 3 playlists. Upgrade to Premium to create more.", "error")
-        return redirect(url_for('membership'))  # or your payment page
+        return redirect(url_for('membership'))
 
-    # ✅ Save to MongoDB
     if user_id and playlist_name and audio_files:
         playlist_doc = {
             'user_id': user_id,
@@ -301,44 +301,23 @@ def getMoodUsingML(text_ans, filePath):
         return "Sad"
 
 
-#/submit ROUTE TO HARD-CODE SAD MOOD
+# 📍 Processing of mood
 @app.route('/process_mood', methods=['POST'])
 def process_mood():
     if request.method == 'POST':
         try:
-            q1 = int(request.form.get("question1"))
-            q2 = int(request.form.get("question2"))
-            q3 = int(request.form.get("question3"))
-            score = q1 + q2 + q3
-            session['score'] = score
+            q1 = request.form.get("question1")
+            q2 = request.form.get("question2")
+            q3 = request.form.get("question3")
+            #score = q1 + q2 + q3
+            #session['score'] = score
+
             # Only considering Q1 for NLP evaluation
-            mood = getMoodUsingML(q1, session['captured_image']) # Returns a string
+            mood = getMoodUsingML(q1, session.get('captured_image'))  # Returns a string
+            print("Detected mood: {mood}")  # This line prints the mood to the console
 
-            # Hardcoded sad mood logic
-            genre = 'classical'
-            playlist_length = 10
-            thaat = ['Bhairavi', 'Bhairav', 'Kafi', 'Bilawal', 'Todi']
-            songs = song_db[genre].find({"thaat": {"$in": thaat}}, {'filename': 1})
-            filenames = [song['filename'] for song in songs if 'filename' in song]
-
-            if not filenames:
-                flash("No songs found for mood.", "error")
-                return render_template('Result2.html', q1=q1, q2=q2, q3=q3, audio_files=[])
-
-            selected = random.sample(filenames, min(playlist_length, len(filenames)))
-            folder_id = get_folder_id(genre)
-            query = f"'{folder_id}' in parents and mimeType='audio/mpeg'"
-            results = service.files().list(q=query, fields="files(id, name)").execute()
-            items = results.get('files', [])
-
-            audio_files = [
-                {'name': file['name'], 'url': f"https://drive.google.com/file/d/{file['id']}/view"}
-                for file in items if file['name'].replace('.mp3', '.pickle') in selected
-            ]
-            
-            
-
-            return render_template("Result2.html", q1=q1, q2=q2, q3=q3, audio_files=audio_files)
+            # Store the mood and question responses for display in result template
+            return render_template("Result2.html", mood=mood, q1=q1, q2=q2, q3=q3)
 
         except Exception as e:
             flash(f"Error processing form: {str(e)}", "message")
@@ -735,7 +714,7 @@ def register():
             session['captcha'] = generate_simple_captcha()
             return render_template('register.html', captcha_text=session['captcha'])
 
-        password_regex = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,30}$'
+        password_regex = r'^(?=.[a-z])(?=.[A-Z])(?=.\d)(?=.[@$!%?&])[A-Za-z\d@$!%?&]{8,30}$'
         if not re.match(password_regex, password):
             flash("Password must be at least 8 characters, have uppercase, lowercase, digit, special character.", "error")
             session['captcha'] = generate_simple_captcha()
