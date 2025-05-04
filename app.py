@@ -68,11 +68,6 @@ sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
     client_secret="c502b9cb165c476db22e415dbce3b886"
 ))
 
-###########################################################################################################################
-# MongoDB connection
-app.config['MONGO_URI'] = "mongodb+srv://abhirajbanerjee02:6Kto5LxwDqchjAc0@cluster-chronotunes.pkxxz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster-ChronoTunes"
-mongo = PyMongo(app)
-db = mongo.db  # ✅ This defines 'db'
 
 #profile page
 @app.route('/profile')
@@ -82,20 +77,18 @@ def profile():
         return redirect(url_for('login'))
 
     try:
-        user_id = ObjectId(session['user_id'])  # ✅ safely convert to ObjectId
-        user = db.users.find_one({'_id': user_id})
+        cur = sql_connection.cursor()
+        cur.execute('SELECT * FROM users WHERE id = %s', (session['user_id'],))
+        user = cur.fetchone()
+        if not user:
+            flash('No user data found.', 'error')
+            return redirect(url_for('login'))
     except Exception as e:
-        flash('Invalid user ID.', 'error')
-        return redirect(url_for('login'))
-
-    if not user:
-        flash('No user data found.', 'error')
+        flash('Error loading profile.', 'error')
         return redirect(url_for('login'))
 
     return render_template('profile.html', user=user)
 
-
-######################################################################################################################################
 
 # 🔗 Google Drive API for audio streaming
 def create_drive_service():
