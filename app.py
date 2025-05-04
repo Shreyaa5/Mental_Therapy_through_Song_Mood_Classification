@@ -258,6 +258,8 @@ def getMoodUsingML(text_ans, filePath):
     tokenizer = AutoTokenizer.from_pretrained("NLP_tokenizer")
     nlp_pipeline = pipeline("text-classification", model=model_NLP, tokenizer=tokenizer, return_all_scores=True)
     nlp_result = nlp_pipeline(text_ans)
+
+    print(nlp_result)
     
 
     frame = cv2.imread(filePath.replace("\\", "/" ))
@@ -286,11 +288,13 @@ def getMoodUsingML(text_ans, filePath):
     imgModel = tf.keras.models.load_model('imageModel3.h5')
     image_result = imgModel.predict(final_image)
     
+    print(image_result)
     # Ensure that we are processing the outputs correctly
     final_probability_list = [0, 0, 0, 0]
     
     for i in range(len(nlp_result[0])):
         final_probability_list[i] = (0.6 * nlp_result[0][i]['score']) + (0.4 * image_result[0][i])
+    print(final_probability_list)
     
     dominant_index = np.argmax(final_probability_list)
     
