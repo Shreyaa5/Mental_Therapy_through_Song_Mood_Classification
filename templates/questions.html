@@ -127,12 +127,28 @@
             }
         }
         .flash-message {
+            padding: 15px;
+            margin: 20px auto;
+            border-radius: 8px;
+            font-size: 16px;
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+            transition: opacity 0.5s ease;
+            z-index: 9999;
+            position: relative;
+        }
+
+        .flash-message.success {
             background-color: #d4edda;
             color: #155724;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 20px;
-            display: none; /* Initially hidden */
+            border: 1px solid #c3e6cb;
+        }
+
+        .flash-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
     </style>
 </head>
@@ -155,6 +171,16 @@
         </div>
         
     </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="flash-message {{ category }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
     <script>
 
