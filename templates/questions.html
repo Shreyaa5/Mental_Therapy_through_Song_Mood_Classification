@@ -18,15 +18,59 @@
             justify-content: center;
             align-items: center;
         }
-        .container {
-            background: rgba(255, 255, 255, 0.9);
-            max-width: 100%;
-            width: 700px;
-            margin: 0;
-            padding: 20px;
-            border-radius: 20px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+
+        .page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; 
         }
+
+        .question-form-container {
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 30px;
+            width: 420px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .captured-img {
+            width: 100%;
+            max-height: 280px;
+            object-fit: cover;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .submit-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 14px;
+            margin-top: 20px;
+            width: 100%;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background-color: #218838;
+        }
+
         h2 {
             color: #333;
             font-size: 1.8em;
@@ -38,14 +82,7 @@
             margin-bottom: 5px;
             font-size: 1.1em;
         }
-        input[type="text"] {
-            width: 90%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 1em;
-        }
+        
         .radio-group {
             margin: 20px 0;
             text-align: left;
@@ -59,33 +96,20 @@
             margin-right: 20px;
             display: inline-block;
         }
-        button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-            margin-top: 20px;
-            width: 100%;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #12a174;
-        }
-        .captured-img {
-            width: 100%;
-            max-height: 300px;
-            object-fit: contain;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
+       
         .error-message {
             color: red;
             font-size: 0.9em;
             margin-top: 10px;
             display: none;
+        }
+        .flash-message{
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: none; /* Initially hidden */
         }
         @media (max-width: 500px) {
             h2 {
@@ -102,42 +126,55 @@
                 padding: 15px;
             }
         }
+        .flash-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: none; /* Initially hidden */
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Answer the Following Questions</h2>
-
-        {% if image_path %}
-            <img src="{{ url_for('static', filename=image_path.replace('\\', '/').split('static/')[-1]) }}" 
-                 alt="Captured Image" class="captured-img">
-        {% endif %}
-
-        <form action="{{ url_for('process_mood') }}" method="POST" id="mood-form">
+    <div class="page">
+        <div class="question-form-container">
+          <h2>Answer the Following Questions</h2>
+      
+            {% if image_path %}
+                <img src="{{ url_for('static', filename=image_path.replace('\\', '/').split('static/')[-1]) }}"
+                     alt="Captured Image" class="captured-img">
+            {% endif %}
+          <form action="{{ url_for('process_mood') }}" method="POST" id="mood-form">
             <label for="q1">How are you feeling today?</label>
-            <input type="text" id="q1" name="question1" placeholder="Enter your mood..." 
-                   aria-label="Enter your current mood" maxlength="200" required>
-
-            <!-- <label for="q2">What is something that made you happy recently?</label>
-            <input type="text" id="q2" name="question2" placeholder="Describe a happy moment..." 
-                   aria-label="Describe a recent happy moment" maxlength="200" required>
-
-            <label>Do you prefer energetic or calming music right now?</label>
-            <div class="radio-group">
-                <input type="radio" id="energetic" name="question3" value="energetic" 
-                       aria-label="Energetic music" required>
-                <label for="energetic">Energetic</label>
-                <input type="radio" id="calming" name="question3" value="calming" 
-                       aria-label="Calming music">
-                <label for="calming">Calming</label> -->
-            </div>
-
+            <input type="text" id="q1" name="question1" placeholder="Enter your current mood" maxlength="100" required>
             <div class="error-message" id="error-message"></div>
-            <button type="submit">Submit</button>
-        </form>
+        
+            <button type="submit" class="submit-btn">Submit</button>
+          </form>
+        </div>
+        
     </div>
 
     <script>
+
+    function showFlashMessage(message, type = 'success') {
+        const flash = document.getElementById('flashMessage');
+        flash.textContent = message;
+
+        // Set background color based on type
+        flash.style.backgroundColor = type === 'success' ? '#d4edda' : '#f8d7da';
+        flash.style.color = type === 'success' ? '#155724' : '#721c24';
+        flash.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
+
+        flash.style.display = 'block';
+
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            flash.style.display = 'none';
+        }, 3000);
+    }
+
         // Check if notifications are supported
         if ("Notification" in window) {
             Notification.requestPermission().then(permission => {
@@ -170,7 +207,7 @@
             setTimeout(() => {
                 try {
                     new Notification("Time to log your mood!", {
-                        body: "Don't forget to log your mood today! 😃",
+                        body: "Don't forget to log your mood today! ",
                         icon: "/static/images/reminder_icon.png"
                     });
                 } catch (err) {
@@ -186,19 +223,19 @@
 
         form.addEventListener("submit", (e) => {
             const q1 = document.getElementById("q1").value.trim();
-            const q2 = document.getElementById("q2").value.trim();
-            const q3 = document.querySelector('input[name="question3"]:checked');
+            // const q2 = document.getElementById("q2").value.trim();
+            // const q3 = document.querySelector('input[name="question3"]:checked');
 
-            if (!q1 || !q2 || !q3) {
+            if (!q1 ) {
                 e.preventDefault();
-                errorMessage.textContent = "Please fill out all fields.";
+                errorMessage.textContent = "Please fill out the mood fields.";
                 errorMessage.style.display = "block";
                 return;
             }
 
-            if (q1.length > 200 || q2.length > 200) {
+            if (q1.length > 100 ) {
                 e.preventDefault();
-                errorMessage.textContent = "Responses must be 200 characters or less.";
+                errorMessage.textContent = "Responses must be 100 characters or less.";
                 errorMessage.style.display = "block";
                 return;
             }
@@ -206,7 +243,7 @@
             errorMessage.style.display = "none";
         });
 
-        // Polyfill for object-fit (optional for older browsers)
+      
         // Consider including: <script src="https://cdnjs.cloudflare.com/ajax/libs/object-fit-images/3.2.4/ofi.min.js"></script>
         
     </script>
