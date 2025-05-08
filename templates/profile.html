@@ -23,7 +23,7 @@
             border-radius: 12px;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 450px;
+            max-width: 500px;
             text-align: center;
             transition: transform 0.3s ease;
         }
@@ -64,6 +64,44 @@
             font-weight: 500;
         }
 
+        .form-group {
+            margin-top: 1.5rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 0.95rem;
+        }
+
+        .change-btn {
+            margin-top: 1.5rem;
+            background-color: #1a3c34;
+            color: #fff;
+            padding: 0.75rem;
+            width: 100%;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .change-btn:hover {
+            background-color: #0f2a22;
+        }
+
         .home-btn, .logout-btn {
             display: inline-block;
             margin-top: 1rem;
@@ -82,10 +120,6 @@
         .home-btn:hover, .logout-btn:hover {
             background-color: #0f2a22;
             transform: scale(1.05);
-        }
-
-        .home-btn:active, .logout-btn:active {
-            transform: scale(0.95);
         }
 
         @media (max-width: 480px) {
@@ -111,6 +145,24 @@
         <p class="profile-info"><strong>Username:</strong> {{ user[1] }}</p>
         <p class="profile-info"><strong>Email:</strong> {{ user[2] }}</p>
         <p class="profile-info"><strong>Membership:</strong> {{ user[7] }}</p>
+
+        <!-- 🔐 Password Change Form -->
+        <form method="POST" action="{{ url_for('profile') }}">
+            <div class="form-group">
+                <label for="currentPassword">Current Password</label>
+                <input type="password" id="currentPassword" name="currentPassword" required>
+            </div>
+            <div class="form-group">
+                <label for="newPassword">New Password</label>
+                <input type="password" id="newPassword" name="newPassword" required>
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirm New Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+            </div>
+            <button type="submit" class="change-btn">Update Password</button>
+        </form>
+
         <a href="{{ url_for('home') }}" class="home-btn">Back to Home</a>
         <form action="{{ url_for('logout') }}" method="post">
             <button type="submit" class="logout-btn">Logout</button>
