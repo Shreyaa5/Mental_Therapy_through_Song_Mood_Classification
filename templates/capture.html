@@ -44,10 +44,36 @@
         button:hover {
             background-color: #218838;
         }
+        .flash-message {
+            padding: 8px;
+            margin: 10px auto;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 60%;
+            max-width: 200px;
+            text-align: center;
+            transition: opacity 0.5s ease;
+            z-index: 9999;
+            position: relative;
+        }
+        .flash-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash-message {{ category }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
         <h1>Capture Your Live Photo</h1>
         <video id="video" autoplay></video>
         <button id="capture">Capture</button>
