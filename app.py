@@ -304,72 +304,15 @@ def test_insert():
 
 def getMoodUsingML(text_ans, filePath):
     filePath = str(filePath)
+    
     try:
         model_NLP = AutoModelForSequenceClassification.from_pretrained("NLPModel")
         tokenizer = AutoTokenizer.from_pretrained("NLP_tokenizer")
         nlp_pipeline = pipeline("text-classification", model=model_NLP, tokenizer=tokenizer, return_all_scores=True)
         nlp_result = nlp_pipeline(text_ans)
-    try:
-        model_NLP = AutoModelForSequenceClassification.from_pretrained("NLPModel")
-        tokenizer = AutoTokenizer.from_pretrained("NLP_tokenizer")
-        nlp_pipeline = pipeline("text-classification", model=model_NLP, tokenizer=tokenizer, return_all_scores=True)
-        nlp_result = nlp_pipeline(text_ans)
-
         print(nlp_result)
-        
-        print(nlp_result)
-        
-
-        frame = cv2.imread(filePath.replace("\\", "/" ))
         frame = cv2.imread(filePath.replace("\\", "/" ))
 
-        if frame is None:
-            print("Frame is returning None")
-            return "Frame returning None"
-        else:
-            print("Frame Found")
-        
-        faceCascacde = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        grayImg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = faceCascacde.detectMultiScale(grayImg, 1.1, 4)
-        print("Number of faces detected = ", len(faces))
-        if(len(faces) == 0 or len(faces) == None):
-            return "No Face"
-        
-        
-        for (x, y, w, h) in faces:
-            face_roi = frame[y:y+h, x:x+w]
-            print("Trying FACE_ROI")
-            break
-        
-        final_image = cv2.resize(face_roi, (224, 224))
-        final_image = np.expand_dims(final_image, axis=0)
-        final_image = final_image/255.0
-        
-        imgModel = tf.keras.models.load_model('imageModel3.h5')
-        image_result = imgModel.predict(final_image)
-        
-        print(image_result)
-        # Ensure that we are processing the outputs correctly
-        final_probability_list = [0, 0, 0, 0]
-        
-        for i in range(len(nlp_result[0])):
-            final_probability_list[i] = (0.75 * nlp_result[0][i]['score']) + (0.25 * image_result[0][i])
-        print(final_probability_list)
-        
-        dominant_index = np.argmax(final_probability_list)
-        
-        if dominant_index == 0:
-            return "Angry"
-        elif dominant_index == 1:
-            return "Happy"
-        elif dominant_index == 2:
-            return "Neutral"
-        elif dominant_index == 3:
-            return "Sad"
-    except:
-        flash("Something went wrong, try again", category="error")
-        render_template("capture.html")
         if frame is None:
             print("Frame is returning None")
             return "Frame returning None"
