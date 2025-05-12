@@ -172,8 +172,21 @@ def generate_playlist():
         return redirect(url_for('home'))
 
     # Step 1: Fetch songs from MongoDB
-    thaat = ['Bhairavi', 'Bhairav', 'Kafi', 'Bilawal', 'Todi']
-    songs = song_db[genre.lower()].find({"thaat": {"$in": thaat}}, {'filename': 1})
+    #Mood-specific Thaat mapping
+    mood_thaats = {
+        'happy': ['Bilaval', 'Kalyan', 'Khamaj', 'Kafi', 'Asavari', 'Bhairav', 'Marva', 'Poorvi', 'Todi', 'Bhairavi'],
+        'sad': ['Bilaval', 'Kafi', 'Bhairav', 'Todi'],
+        'neutral': ['Bilaval', 'Kafi', 'Bhairav', 'Todi', 'Khamaj', 'Poorvi'],
+        'angry': ['Bilaval' , 'Kalyan' , 'Khambaj' , ' Kafi', 'Asavari']
+    }
+
+    selected_thaats = mood_thaats.get(mood.lower(), [])
+    print(f"[DEBUG] MOOD_THAAT - {mood.upper()} → {selected_thaats}")
+    if not selected_thaats:
+        flash("Invalid mood or no Thaat mapping found.", "error")
+        return render_template('playlist.html', playlist_name=playlist_name, audio_files=[])
+
+    songs = song_db[genre.lower()].find({"thaat": {"$in": selected_thaats}}, {'filename': 1})
     filenames = [song['filename'] for song in songs if 'filename' in song]
 
     if not filenames:
