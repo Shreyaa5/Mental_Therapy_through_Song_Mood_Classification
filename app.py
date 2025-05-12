@@ -135,7 +135,8 @@ class PlaylistForm(FlaskForm):
     genre = RadioField('Select your preferred genre:', choices=[
         ('Hindi-Retro', 'Hindi-Retro'),
         ('Hindi-Modern', 'Hindi-Modern'),
-        ('Classical', 'Classical')
+        ('Classical', 'Classical'),
+        ('Bengali', 'Bengali')
     ], validators=[DataRequired()])
     
     playlist_length = IntegerField('Length of Playlist (1-30 songs):', 
