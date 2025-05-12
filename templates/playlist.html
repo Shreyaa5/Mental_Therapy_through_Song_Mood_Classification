@@ -102,6 +102,26 @@
             text-decoration: underline;
         }
 
+        .blurred {
+            filter: blur(3px);
+            pointer-events: none;
+            position: relative;
+        }
+
+        .blurred::after {
+            content: "Premium Only";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #2B6CB0;
+        }
+
         .no-songs {
             text-align: center;
             color: #4A5568;
@@ -126,6 +146,55 @@
 
         .back-btn:hover {
             background-color: #1A4971;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center; align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 10px;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+        }
+
+        .modal-content h3 {
+            color: #2B6CB0;
+            margin-bottom: 10px;
+        }
+
+        .modal-content p {
+            color: #444;
+            font-size: 1rem;
+        }
+
+        .upgrade-btn {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 10px 20px;
+            background-color: #2B6CB0;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #aaa;
         }
 
         @media (max-width: 768px) {
@@ -165,8 +234,12 @@
         {% if audio_files %}
             <ul>
                 {% for song in audio_files %}
-                    <li>
-                        <a href="{{ song.url }}" target="_blank" class="song-name">{{ song.name }}</a>
+                    <li class="song-item {% if not is_premium and loop.index > 3 %}blurred{% endif %}">
+                        {% if not is_premium and loop.index > 3 %}
+                            <a href="javascript:void(0);" onclick="showUpgradeModal()" class="song-name">{{ song.name }}</a>
+                        {% else %}
+                            <a href="{{ song.url }}" target="_blank" class="song-name">{{ song.name }}</a>
+                        {% endif %}
                     </li>
                 {% endfor %}
             </ul>
@@ -176,5 +249,32 @@
 
         <a href="/" class="back-btn">Return to Home</a>
     </div>
+
+    <!--  Upgrade Modal -->
+    <div id="upgradeModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h3>Upgrade to Premium</h3>
+            <p>Unlock full access to all songs in your playlist!</p>
+            <a href="{{ url_for('membership') }}" class="upgrade-btn">Upgrade Now</a>
+        </div>
+    </div>
+
+    <script>
+        function showUpgradeModal() {
+            document.getElementById("upgradeModal").style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("upgradeModal").style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById("upgradeModal");
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
 </body>
 </html>

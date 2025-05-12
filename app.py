@@ -32,6 +32,10 @@ from flask_pymongo import PyMongo
 import tensorflow as tf
 from tensorflow import keras
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+from flask_wtf import FlaskForm
+from wtforms import RadioField, IntegerField
+from wtforms.validators import DataRequired, NumberRange
+
 
 
 # Initialize Flask app
@@ -53,7 +57,7 @@ sql_connection = mysql.connector.connect(
 )
 
 
-# 🔗 MongoDB connection (added from ChronoTunes)
+# MongoDB connection (added from ChronoTunes)
 key = "6Kto5LxwDqchjAc0"
 uri = "mongodb+srv://abhirajbanerjee02:6Kto5LxwDqchjAc0@cluster-chronotunes.pkxxz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster-ChronoTunes"
 mongoClient = MongoClient(uri, server_api=ServerApi('1'))
@@ -86,11 +90,29 @@ def profile():
     except Exception as e:
         flash('Error loading profile.', 'error')
         return redirect(url_for('login'))
+    if request.method == 'POST':
+        current_password = request.form['currentPassword']
+        new_password = request.form['newPassword']
+        confirm_password = request.form['confirmPassword']
+
+        # Password verification
+        if new_password != confirm_password:
+            flash("New passwords do not match!", "error")
+        elif current_password != user[4]:  # Assuming index 4 is the password column
+            flash("Current password is incorrect!", "error")
+        else:
+            try:
+                cur.execute('UPDATE users SET password = %s WHERE id = %s', (new_password, session['user_id']))
+                sql_connection.commit()
+                flash("Password updated successfully!", "success")
+                return redirect(url_for('profile'))
+            except Exception as e:
+                flash("Error updating password.", "error")
 
     return render_template('profile.html', user=user)
 
 
-# 🔗 Google Drive API for audio streaming
+# Google Drive API for audio streaming
 def create_drive_service():
     SERVICE_ACCOUNT_FILE = 'credentials.json'
     SCOPES = ['https://www.googleapis.com/auth/drive']
@@ -99,7 +121,7 @@ def create_drive_service():
 
 service = create_drive_service()
 
-# 🗂 Folder IDs for genres
+# Folder IDs for genres
 def get_folder_id(genre):
     mapping = {
         'bengali': '1gifXb2IjlJoIYs9mCZW1-0XITQ6qr1J4',
@@ -109,31 +131,57 @@ def get_folder_id(genre):
     }
     return mapping.get(genre.lower(), '')
 
-## 🎵 Route to get playlist based on mood and raga
-@app.route('/generate_playlist', methods=['GET'])
+class PlaylistForm(FlaskForm):
+    genre = RadioField('Select your preferred genre:', choices=[
+        ('Hindi-Retro', 'Hindi-Retro'),
+        ('Hindi-Modern', 'Hindi-Modern'),
+        ('Classical', 'Classical')
+    ], validators=[DataRequired()])
+    
+    playlist_length = IntegerField('Length of Playlist (1-30 songs):', 
+                                   validators=[DataRequired(), NumberRange(1, 30)])
+
+
+#playlist generation
+@app.route('/generate_playlist', methods=['GET', 'POST'])
 def generate_playlist():
     if 'loggedin' not in session:
         flash('Please log in to continue.', 'error')
         return redirect(url_for('login'))
 
-    mood = request.args.get('mood')
-    playlist_name = request.args.get('playlist_name', 'Your Playlist')
-    genre = 'classical'
-    playlist_length = 10
+    if request.method == 'POST':
+        genre = request.form.get('genre')
+        playlist_length = request.form.get('playlist_length')
+        mood = request.form.get('mood')
+        playlist_name = request.form.get('playlist_name')
+    else:
+        genre = request.args.get('genre')
+        playlist_length = request.args.get('playlist_length')
+        mood = request.args.get('mood')
+        playlist_name = request.args.get('playlist_name')
 
-    # mapping if needed [abhiraj]
-    # For now, given a general thaat list for all moods
+    if not all([genre, playlist_length, mood, playlist_name]):
+        flash("Missing input values. Please fill all fields.", "error")
+        return redirect(url_for('home'))
+
+    try:
+        playlist_length = int(playlist_length)
+    except ValueError:
+        flash("Invalid playlist length.", "error")
+        return redirect(url_for('home'))
+
+    # Step 1: Fetch songs from MongoDB
     thaat = ['Bhairavi', 'Bhairav', 'Kafi', 'Bilawal', 'Todi']
-
-    songs = song_db[genre].find({"thaat": {"$in": thaat}}, {'filename': 1})
+    songs = song_db[genre.lower()].find({"thaat": {"$in": thaat}}, {'filename': 1})
     filenames = [song['filename'] for song in songs if 'filename' in song]
 
     if not filenames:
-        flash("No songs found for the selected mood.", "error")
-        return render_template('playlist.html', playlist_name=playlist_name, audio_files=[])
+        flash("No songs found for the selected mood and genre.", "error")
+        return render_template('playlist.html', playlist_name=playlist_name, audio_files=[], is_premium=False)
 
     selected = random.sample(filenames, min(playlist_length, len(filenames)))
 
+    # Step 2: Fetch corresponding Spotify links
     folder_id = get_folder_id(genre)
     query = f"'{folder_id}' in parents and mimeType='audio/mpeg'"
     results = service.files().list(q=query, fields="files(id, name)").execute()
@@ -146,20 +194,17 @@ def generate_playlist():
             try:
                 result = sp.search(q=song_name, type='track', limit=1)
                 if result['tracks']['items']:
-                    top_track = result['tracks']['items'][0]
-                    track_url = top_track['external_urls']['spotify']
+                    track_url = result['tracks']['items'][0]['external_urls']['spotify']
                     audio_files.append({'name': song_name, 'url': track_url})
             except Exception as e:
                 print(f"[Spotify ERROR] {song_name}: {e}")
 
     user_id = session.get('user_id')
     username = session.get('username')
+    is_premium = session.get('membership') == 'active'
 
-    existing = playlist_collection.find_one({
-        'user_id': user_id,
-        'playlist_name': playlist_name
-    })
-
+    # Check for duplicate playlist name
+    existing = playlist_collection.find_one({'user_id': user_id, 'playlist_name': playlist_name})
     if existing:
         return '''
             <script>
@@ -168,15 +213,13 @@ def generate_playlist():
             </script>
         '''
 
+    # Free users can only create 3 playlists
     playlist_count = playlist_collection.count_documents({'user_id': user_id})
-    is_premium = session.get('membership') == 'active'
-
-    print(f"[DEBUG] User ID: {user_id}, Membership: {session.get('membership')}, Playlist Count: {playlist_count}")
-
     if not is_premium and playlist_count >= 3:
         flash("Free users can only create 3 playlists. Upgrade to Premium to create more.", "error")
         return redirect(url_for('membership'))
 
+    # Save playlist
     if user_id and playlist_name and audio_files:
         playlist_doc = {
             'user_id': user_id,
@@ -197,7 +240,14 @@ def generate_playlist():
             flash("An error occurred while saving your playlist.", "error")
             return redirect(url_for('home'))
 
-    return render_template('playlist.html', playlist_name=playlist_name, audio_files=audio_files)
+    # Return with flag to indicate membership
+    return render_template(
+        'playlist.html',
+        playlist_name=playlist_name,
+        audio_files=audio_files,
+        is_premium=is_premium
+    )
+
 
 
 #users can see their previous playlists
@@ -251,61 +301,67 @@ def test_insert():
     result = playlist_collection.insert_one(doc)
     return f"Inserted test playlist with ID: {result.inserted_id}"
 
+
 def getMoodUsingML(text_ans, filePath):
     filePath = str(filePath)
-    
-    model_NLP = AutoModelForSequenceClassification.from_pretrained("NLPModel")
-    tokenizer = AutoTokenizer.from_pretrained("NLP_tokenizer")
-    nlp_pipeline = pipeline("text-classification", model=model_NLP, tokenizer=tokenizer, return_all_scores=True)
-    nlp_result = nlp_pipeline(text_ans)
+    try:
+        model_NLP = AutoModelForSequenceClassification.from_pretrained("NLPModel")
+        tokenizer = AutoTokenizer.from_pretrained("NLP_tokenizer")
+        nlp_pipeline = pipeline("text-classification", model=model_NLP, tokenizer=tokenizer, return_all_scores=True)
+        nlp_result = nlp_pipeline(text_ans)
 
-    print(nlp_result)
-    
+        print(nlp_result)
+        
 
-    frame = cv2.imread(filePath.replace("\\", "/" ))
+        frame = cv2.imread(filePath.replace("\\", "/" ))
 
-    if frame is None:
-        print("Frame is returning None")
-        return "Frame returning None"
-    else:
-        print("Frame Found")
-    
-    faceCascacde = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    grayImg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = faceCascacde.detectMultiScale(grayImg, 1.1, 4)
-    print("Number of faces detected = ", len(faces))
-    
-    
-    for (x, y, w, h) in faces:
-        face_roi = frame[y:y+h, x:x+w]
-        print("Trying FACE_ROI")
-        break
-    
-    final_image = cv2.resize(face_roi, (224, 224))
-    final_image = np.expand_dims(final_image, axis=0)
-    final_image = final_image/255.0
-    
-    imgModel = tf.keras.models.load_model('imageModel3.h5')
-    image_result = imgModel.predict(final_image)
-    
-    print(image_result)
-    # Ensure that we are processing the outputs correctly
-    final_probability_list = [0, 0, 0, 0]
-    
-    for i in range(len(nlp_result[0])):
-        final_probability_list[i] = (0.6 * nlp_result[0][i]['score']) + (0.4 * image_result[0][i])
-    print(final_probability_list)
-    
-    dominant_index = np.argmax(final_probability_list)
-    
-    if dominant_index == 0:
-        return "Angry"
-    elif dominant_index == 1:
-        return "Happy"
-    elif dominant_index == 2:
-        return "Neutral"
-    elif dominant_index == 3:
-        return "Sad"
+        if frame is None:
+            print("Frame is returning None")
+            return "Frame returning None"
+        else:
+            print("Frame Found")
+        
+        faceCascacde = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        grayImg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = faceCascacde.detectMultiScale(grayImg, 1.1, 4)
+        print("Number of faces detected = ", len(faces))
+        if(len(faces) == 0 or len(faces) == None):
+            return "No Face"
+        
+        
+        for (x, y, w, h) in faces:
+            face_roi = frame[y:y+h, x:x+w]
+            print("Trying FACE_ROI")
+            break
+        
+        final_image = cv2.resize(face_roi, (224, 224))
+        final_image = np.expand_dims(final_image, axis=0)
+        final_image = final_image/255.0
+        
+        imgModel = tf.keras.models.load_model('imageModel3.h5')
+        image_result = imgModel.predict(final_image)
+        
+        print(image_result)
+        # Ensure that we are processing the outputs correctly
+        final_probability_list = [0, 0, 0, 0]
+        
+        for i in range(len(nlp_result[0])):
+            final_probability_list[i] = (0.75 * nlp_result[0][i]['score']) + (0.25 * image_result[0][i])
+        print(final_probability_list)
+        
+        dominant_index = np.argmax(final_probability_list)
+        
+        if dominant_index == 0:
+            return "Angry"
+        elif dominant_index == 1:
+            return "Happy"
+        elif dominant_index == 2:
+            return "Neutral"
+        elif dominant_index == 3:
+            return "Sad"
+    except:
+        flash("Something went wrong, try again", category="error")
+        render_template("capture.html")
 
 
 # Processing of mood
@@ -326,6 +382,9 @@ def process_mood():
             print(final_img_path)
             # Only considering Q1 for NLP evaluation
             mood = getMoodUsingML(q1, final_img_path)  # Returns a string
+            if(mood == "No Face"):
+                flash("No Face Found", category="error")
+                return render_template("capture.html")
             print(f"Detected mood: {mood}")  # This line prints the mood to the console
             session['mood_playlist'] = mood
 
@@ -349,6 +408,7 @@ def generate_simple_captcha():
 # Landing page
 @app.route('/')
 def home():
+    
     if 'loggedin' in session:
         return render_template('landing.html')
     else:
@@ -797,7 +857,7 @@ def login():
         session['captcha'] = generate_simple_captcha()
         return render_template('login.html', captcha_text=session['captcha'])
 
-    # 👇 Handling GET request (when page loads)
+    # Handling GET request (when page loads)
     session['captcha'] = generate_simple_captcha()
     return render_template('login.html', captcha_text=session['captcha'])
 
@@ -905,4 +965,4 @@ def delete_playlist(playlist_id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True) 
