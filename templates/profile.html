@@ -25,11 +25,6 @@
             width: 100%;
             max-width: 500px;
             text-align: center;
-            transition: transform 0.3s ease;
-        }
-
-        .profile-container:hover {
-            transform: translateY(-5px);
         }
 
         .profile-avatar {
@@ -85,25 +80,7 @@
             font-size: 0.95rem;
         }
 
-        .change-btn {
-            margin-top: 1.5rem;
-            background-color: #1a3c34;
-            color: #fff;
-            padding: 0.75rem;
-            width: 100%;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background-color 0.3s ease;
-        }
-
-        .change-btn:hover {
-            background-color: #0f2a22;
-        }
-
-        .home-btn, .logout-btn {
-            display: inline-block;
+        .change-btn, .home-btn, .logout-btn, .membership-btn {
             margin-top: 1rem;
             background-color: #1a3c34;
             color: #ffffff;
@@ -112,15 +89,17 @@
             border-radius: 8px;
             cursor: pointer;
             font-size: 1rem;
-            font-weight: 400;
             text-decoration: none;
+            display: inline-block;
             transition: background-color 0.3s ease, transform 0.2s ease;
         }
 
-        .home-btn:hover, .logout-btn:hover {
+
+        .home-btn:hover, .logout-btn:hover, .change-btn:hover,.membership-btn:hover {
             background-color: #0f2a22;
             transform: scale(1.05);
         }
+
         .flash-message {
             padding: 15px;
             margin: 20px auto;
@@ -130,8 +109,6 @@
             max-width: 600px;
             text-align: center;
             transition: opacity 0.5s ease;
-            z-index: 9999;
-            position: relative;
         }
 
         .flash-message.success {
@@ -165,24 +142,33 @@
 <body>
     <div class="profile-container">
         <div class="profile-avatar">{{ user[3][0] }}</div>
-        <h2>Welcome, {{ user[3] }}</h2>
-
+        <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                <div class="flash-message {{ category }}">
-                    {{ message }}
-                </div>
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
-
-
+        
+        <h2>Welcome, {{ user[3] }}</h2>
         <p class="profile-info"><strong>Username:</strong> {{ user[1] }}</p>
         <p class="profile-info"><strong>Email:</strong> {{ user[2] }}</p>
-        <p class="profile-info"><strong>Membership:</strong> {{ user[7] }}</p>
+        <p class="profile-info"><strong>Membership:</strong> 
+            {% if user[7] == 'active' %}
+                <span style="color: green;">Premium</span>
+            {% else %}
+                <span style="color: red;">Free</span>
+            {% endif %}
+        </p>
 
-        <!-- 🔐 Password Change Form -->
+        {% if user[7] != 'active' %}
+            <a href="{{ url_for('membership') }}" class="membership-btn">Buy Membership</a>
+        {% endif %}
+
+        <!-- Password Update Form -->
         <form method="POST" action="{{ url_for('profile') }}">
             <div class="form-group">
                 <label for="currentPassword">Current Password</label>
@@ -203,9 +189,8 @@
         <form action="{{ url_for('logout') }}" method="post">
             <button type="submit" class="logout-btn">Logout</button>
         </form>
+
+        
     </div>
-
-
-
 </body>
 </html>

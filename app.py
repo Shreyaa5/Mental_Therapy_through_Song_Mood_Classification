@@ -27,8 +27,6 @@ from flask import Flask, jsonify
 from bson import ObjectId
 from bson.errors import InvalidId
 from flask_pymongo import PyMongo
-from flask_pymongo import PyMongo
-from flask_pymongo import PyMongo
 import tensorflow as tf
 from tensorflow import keras
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
@@ -177,7 +175,7 @@ def generate_playlist():
         'happy': ['Bilaval', 'Kalyan', 'Khamaj', 'Kafi', 'Asavari', 'Bhairav', 'Marva', 'Poorvi', 'Todi', 'Bhairavi'],
         'sad': ['Bilaval', 'Kafi', 'Bhairav', 'Todi'],
         'neutral': ['Bilaval', 'Kafi', 'Bhairav', 'Todi', 'Khamaj', 'Poorvi'],
-        'angry': ['Bilaval' , 'Kalyan' , 'Khambaj' , ' Kafi', 'Asavari']
+        'angry': ['Bilaval' , 'Kalyan' , 'Khambaj' , 'Kafi', 'Asavari']
     }
 
     selected_thaats = mood_thaats.get(mood.lower(), [])
@@ -254,7 +252,7 @@ def generate_playlist():
             flash("An error occurred while saving your playlist.", "error")
             return redirect(url_for('home'))
 
-    # Return with flag to indicate membership
+    #Return with flag to indicate membership
     return render_template(
         'playlist.html',
         playlist_name=playlist_name,
