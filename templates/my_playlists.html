@@ -355,33 +355,6 @@
         }
     </style>
 </head>
-<!-- <body>
-    <div class="container">
-        <h2>Your Saved Playlists</h2>
-        
-
-        {% if playlists %}
-            <ul>
-                {% for p in playlists %}
-                    <li>
-                        <a href="{{ url_for('view_playlist', playlist_id=p._id) }}" class="playlist-link">
-                            {{ p.playlist_name }}
-                        </a>
-                        <div class="created-time">
-                            Created on {{ p.created_at.strftime("%Y-%m-%d %H:%M") }}
-                        </div>
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="no-playlists">No playlists saved yet.</p>
-        {% endif %}
-
-        <a href="{{ url_for('home') }}" class="back-btn">Return to Home</a>
-    </div>
-</body>
-</html> -->
-
 <body>
     <div class="container">
         <h2>Your Saved Playlists</h2>
@@ -402,8 +375,8 @@
 
         <div class="loading" id="loading">Loading...</div>
 
-        <ul id="playlist-list">
-            {% if playlists %}
+        {% if playlists %}
+            <ul id="playlist-list">
                 {% for p in playlists %}
                     <li data-name="{{ p.playlist_name }}" data-date="{{ p.created_at }}" data-id="{{ p._id }}">
                         <a href="{{ url_for('view_playlist', playlist_id=p._id) }}" class="playlist-link">
@@ -415,27 +388,15 @@
                         <button class="delete-btn" data-id="{{ p._id }}">Delete</button>
                     </li>
                 {% endfor %}
-            {% else %}
-                <p class="no-playlists">No playlists saved yet.</p>
-            {% endif %}
-        </ul>
+            </ul>
+        {% else %}
+            <p class="no-playlists">No playlists saved yet.</p>
+        {% endif %}
 
         <a href="{{ url_for('home') }}" class="back-btn">Return to Home</a>
     </div>
 
-    <!-- <div class="modal" id="duplicate-modal">
-        <div class="modal-content">
-            <h3>Playlist Name Exists</h3>
-            <p>A playlist named "<span id="duplicate-name"></span>" already exists. Do you want to overwrite it?</p>
-            <div class="modal-buttons">
-                <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
-                <button class="modal-btn overwrite" onclick="overwritePlaylist()">Overwrite</button>
-            </div>
-        </div>
-    </div> -->
-
     <script>
-        // Search functionality
         const searchInput = document.getElementById('search');
         const playlistList = document.getElementById('playlist-list');
         const playlists = playlistList ? Array.from(playlistList.children) : [];
@@ -448,7 +409,6 @@
             });
         });
 
-        // Sort functionality
         const sortSelect = document.getElementById('sort');
         sortSelect.addEventListener('change', () => {
             const [key, order] = sortSelect.value.split('-');
@@ -467,7 +427,6 @@
             sorted.forEach(playlist => playlistList.appendChild(playlist));
         });
 
-        // Delete functionality
         document.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const playlistId = btn.dataset.id;
@@ -475,18 +434,20 @@
                     const loading = document.getElementById('loading');
                     loading.style.display = 'block';
                     try {
-                        const response = await fetch(`/delete_playlist/${playlistId}`, {
-                            method: 'DELETE',
-                        });
+                        const response = await fetch(`/delete_playlist/${playlistId}`, { method: 'DELETE' });
                         if (response.ok) {
                             btn.closest('li').remove();
                             if (!playlistList.children.length) {
-                                playlistList.innerHTML = '<p class="no-playlists">No playlists saved yet.</p>';
+                                playlistList.remove();
+                                const noMsg = document.createElement('p');
+                                noMsg.className = 'no-playlists';
+                                noMsg.textContent = 'No playlists saved yet.';
+                                document.querySelector('.container').appendChild(noMsg);
                             }
                         } else {
                             alert('Failed to delete playlist.');
                         }
-                    } catch (error) {
+                    } catch {
                         alert('Error deleting playlist.');
                     } finally {
                         loading.style.display = 'none';
@@ -495,7 +456,6 @@
             });
         });
 
-        // Mobile touch for preview
         document.querySelectorAll('li').forEach(li => {
             li.addEventListener('touchstart', () => {
                 li.classList.add('touched');
