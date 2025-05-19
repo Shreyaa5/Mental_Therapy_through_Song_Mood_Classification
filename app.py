@@ -72,7 +72,7 @@ sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
 
 
 #profile page
-@app.route('/profile')
+@app.route('/profile', methods=['GET'])
 def profile():
     if 'user_id' not in session:
         flash('Please log in to view your profile.', 'error')
@@ -88,26 +88,56 @@ def profile():
     except Exception as e:
         flash('Error loading profile.', 'error')
         return redirect(url_for('login'))
-    if request.method == 'POST':
-        current_password = request.form['currentPassword']
-        new_password = request.form['newPassword']
-        confirm_password = request.form['confirmPassword']
-
-        # Password verification
-        if new_password != confirm_password:
-            flash("New passwords do not match!", "error")
-        elif current_password != user[4]:  # Assuming index 4 is the password column
-            flash("Current password is incorrect!", "error")
-        else:
-            try:
-                cur.execute('UPDATE users SET password = %s WHERE id = %s', (new_password, session['user_id']))
-                sql_connection.commit()
-                flash("Password updated successfully!", "success")
-                return redirect(url_for('profile'))
-            except Exception as e:
-                flash("Error updating password.", "error")
 
     return render_template('profile.html', user=user)
+
+
+
+#Change password from profile and saved in my sql database
+@app.route('/change_password', methods=['POST'])
+def change_password():
+    if 'user_id' not in session:
+        flash("Please log in first.", "error")
+        return redirect(url_for('login'))
+
+    cur = sql_connection.cursor()
+    cur.execute('SELECT password FROM users WHERE id = %s', (session['user_id'],))
+    user = cur.fetchone()
+    if not user:
+        flash("User not found.", "error")
+        return redirect(url_for('login'))
+
+    current_password = request.form['current_password']
+    new_password = request.form['new_password']
+    confirm_password = request.form['confirm_password']
+
+    if current_password != user[0]:
+        flash("Current password is incorrect.", "error")
+        return redirect(url_for('profile'))
+
+    if new_password != confirm_password:
+        flash("New passwords do not match.", "error")
+        return redirect(url_for('profile'))
+
+    if current_password == new_password:
+        flash("New password cannot be the same as the current password.", "error")
+        return redirect(url_for('profile'))
+
+    # Enforce strong password regex
+    password_regex = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%?&])[A-Za-z\d@$!%?&]{8,}$'
+    if not re.match(password_regex, new_password):
+        flash("Password must include uppercase, lowercase, digit, special character, and be at least 8 characters.", "error")
+        return redirect(url_for('profile'))
+
+    try:
+        cur.execute('UPDATE users SET password = %s WHERE id = %s', (new_password, session['user_id']))
+        sql_connection.commit()
+        flash("Password changed successfully!", "success")
+    except Exception as e:
+        flash("Error updating password.", "error")
+
+    return redirect(url_for('profile'))
+
 
 
 # Google Drive API for audio streaming
