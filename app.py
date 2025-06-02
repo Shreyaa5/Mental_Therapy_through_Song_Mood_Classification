@@ -47,7 +47,7 @@ user_answers = {}
 
 # Database setup
 sql_connection = mysql.connector.connect(
-    host="115.187.17.57",
+    host="134.195.137.100",
     user="debanjan",
     password="debanjan",
     database="flask_ml_db",
