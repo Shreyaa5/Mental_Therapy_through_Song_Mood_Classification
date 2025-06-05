@@ -348,8 +348,8 @@ def getMoodUsingML(text_ans, filePath):
     filePath = str(filePath)
     
     try:
-        model_NLP = AutoModelForSequenceClassification.from_pretrained("NLPModel")
-        tokenizer = AutoTokenizer.from_pretrained("NLP_tokenizer")
+        model_NLP = AutoModelForSequenceClassification.from_pretrained("NLPModel2")
+        tokenizer = AutoTokenizer.from_pretrained("NLP_tokenizer2")
         nlp_pipeline = pipeline("text-classification", model=model_NLP, tokenizer=tokenizer, return_all_scores=True)
         nlp_result = nlp_pipeline(text_ans)
         print(nlp_result)
@@ -379,26 +379,35 @@ def getMoodUsingML(text_ans, filePath):
         final_image = final_image/255.0
         
         imgModel = tf.keras.models.load_model('imageModel3.h5')
-        image_result = imgModel.predict(final_image)
+        temp_image_result = imgModel.predict(final_image)
+
+        image_result = [0]*5
+        image_result[0] = temp_image_result[0][1]
+        image_result[1] = temp_image_result[0][1]
+        image_result[2] = temp_image_result[0][2]
+        image_result[3] = temp_image_result[0][3]
+        image_result[4] = temp_image_result[0][0]
         
         print(image_result)
         # Ensure that we are processing the outputs correctly
-        final_probability_list = [0, 0, 0, 0]
+        final_probability_list = [0, 0, 0, 0, 0]
         
         for i in range(len(nlp_result[0])):
-            final_probability_list[i] = (0.75 * nlp_result[0][i]['score']) + (0.25 * image_result[0][i])
+            final_probability_list[i] = (0.75 * nlp_result[0][i]['score']) + (0.25 * image_result[i])
         print(final_probability_list)
         
         dominant_index = np.argmax(final_probability_list)
         
         if dominant_index == 0:
-            return "Angry"
+            return "Pleased"
         elif dominant_index == 1:
             return "Happy"
         elif dominant_index == 2:
-            return "Neutral"
+            return "Calm"
         elif dominant_index == 3:
             return "Sad"
+        elif dominant_index == 4:
+            return "Angry"
     except:
         flash("Something went wrong, try again", category="error")
         render_template("capture.html")
