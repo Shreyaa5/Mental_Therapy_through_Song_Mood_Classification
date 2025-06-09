@@ -202,10 +202,12 @@ def generate_playlist():
     # Step 1: Fetch songs from MongoDB
     #Mood-specific Thaat mapping
     mood_thaats = {
-        'happy': ['Bilaval', 'Kalyan', 'Khamaj', 'Kafi', 'Asavari', 'Bhairav', 'Marva', 'Poorvi', 'Todi', 'Bhairavi'],
-        'sad': ['Bilaval', 'Kafi', 'Bhairav', 'Todi'],
+        'happy': [ 'Kafi', 'Asavari', 'Bhairav', 'Marva', 'Poorvi', 'Todi', 'Bhairavi'],
+        'sad': ['Marva', 'Poorvi', 'Todi'],
         'neutral': ['Bilaval', 'Kafi', 'Bhairav', 'Todi', 'Khamaj', 'Poorvi'],
-        'angry': ['Bilaval' , 'Kalyan' , 'Khambaj' , 'Kafi', 'Asavari']
+        'angry': ['Bhairavi', 'Asavari', 'Todi' ],
+        'calm' : ['Kalyan', 'Kafi', 'Bilawal', 'Bhairav'],
+        'pleased' :['Bilaval', 'Kalyan', 'Khamaj', 'Kafi']
     }
 
     selected_thaats = mood_thaats.get(mood.lower(), [])
