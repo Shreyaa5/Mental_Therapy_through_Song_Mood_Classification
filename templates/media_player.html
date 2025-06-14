@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<html>
+<head>
+    <title>Now Playing</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #e8f5e9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h2 {
+            color: darkcyan;
+            margin-bottom: 20px;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .controls {
+            margin-top: 20px;
+        }
+
+        .controls button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            margin: 6px;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .controls button:hover {
+            background-color: #0056b3;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+
+            h2 {
+                font-size: 20px;
+            }
+
+            .controls button {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+        }
+
+        .back-btn {
+                position: absolute;
+                top: 20px;
+                right: 30px;
+                background-color: #007bff;
+                color: white;
+                padding: 8px 16px;
+                text-decoration: none;
+                font-weight: bold;
+                border-radius: 6px;
+                z-index: 999;
+                transition: background-color 0.3s ease;
+            }
+        .back-btn:hover {
+            background-color: #0056b3;
+        }
+
+
+    </style>
+</head>
+<body>
+    <a href="{{ return_url }}" class="back-btn">← Back to Playlist</a>
+
+<div class="container">
+    <h2 id="songTitle">Loading...</h2>
+    <audio id="audioPlayer" controls autoplay></audio>
+
+    <div class="controls">
+        <button onclick="toggleShuffle()" title="Shuffle">🔀</button>
+        <button onclick="prevSong()" title="Previous">⏮️</button>
+        <button onclick="seek(-10)" title="Rewind 10s">⏪</button>
+        <button onclick="seek(10)" title="Forward 10s">⏩</button>
+        <button onclick="nextSong()" title="Next">⏭️</button>
+        <button onclick="toggleRepeat()" title="Repeat">🔁</button>
+    </div>
+</div>
+
+<script>
+    const playlist = {{ audio_files|tojson }};
+    let currentIndex = {{ index }};
+    const player = document.getElementById("audioPlayer");
+    const title = document.getElementById("songTitle");
+
+    let shuffle = false;
+    let repeat = false;
+
+    function extractDriveFileId(viewUrl) {
+        const match = viewUrl.match(/\/d\/([a-zA-Z0-9_-]+)\//);
+        return match ? match[1] : "";
+    }
+
+    function getStreamUrl(fileId) {
+        return `/stream/${fileId}`;
+    }
+
+    function loadSong() {
+        const song = playlist[currentIndex];
+        const fileId = extractDriveFileId(song.url);
+        const streamUrl = getStreamUrl(fileId);
+        title.textContent = song.name;
+        player.src = streamUrl;
+        player.play().catch(err => {
+            console.warn("Playback failed or blocked:", err);
+        });
+    }
+
+    function seek(seconds) {
+        player.currentTime += seconds;
+    }
+
+    function prevSong() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            loadSong();
+        }
+    }
+
+    function nextSong() {
+        if (shuffle) {
+            let nextIndex;
+            do {
+                nextIndex = Math.floor(Math.random() * playlist.length);
+            } while (nextIndex === currentIndex && playlist.length > 1);
+            currentIndex = nextIndex;
+        } else {
+            currentIndex = (currentIndex + 1) % playlist.length;
+        }
+        loadSong();
+    }
+
+
+    function toggleShuffle() {
+        shuffle = !shuffle;
+        alert("Shuffle " + (shuffle ? "enabled" : "disabled"));
+    }
+
+    function toggleRepeat() {
+        repeat = !repeat;
+        alert("Repeat " + (repeat ? "enabled" : "disabled"));
+    }
+
+    player.addEventListener('ended', () => {
+        if (repeat) {
+            loadSong(); // replay current
+        } else {
+            nextSong();
+        }
+    });
+
+    window.onload = loadSong;
+
+</script>
+
+</body>
+</html>

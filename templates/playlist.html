@@ -238,17 +238,25 @@
                         {% if not is_premium and loop.index > 3 %}
                             <a href="javascript:void(0);" onclick="showUpgradeModal()" class="song-name">{{ song.name }}</a>
                         {% else %}
-                            <a href="{{ song.url }}" target="_blank" class="song-name">{{ song.name }}</a>
+                            <a href="{{ url_for('media_player', index=loop.index0, return_url=url_for('show_current_playlist')) }}" class="song-name">
+                                {{ song.name }}
+                            </a>
+
+
                         {% endif %}
                     </li>
                 {% endfor %}
             </ul>
+            
+
         {% else %}
             <p class="no-songs">No songs found for your mood.</p>
         {% endif %}
 
         <a href="/" class="back-btn">Return to Home</a>
     </div>
+
+
 
     <!--  Upgrade Modal -->
     <div id="upgradeModal" class="modal">
@@ -276,5 +284,8 @@
             }
         }
     </script>
+
+
+
 </body>
-</html>
+</html> 

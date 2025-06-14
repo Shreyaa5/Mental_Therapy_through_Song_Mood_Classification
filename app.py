@@ -33,6 +33,8 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipe
 from flask_wtf import FlaskForm
 from wtforms import RadioField, IntegerField
 from wtforms.validators import DataRequired, NumberRange
+from flask import Response, stream_with_context
+import requests
 
 
 
@@ -172,6 +174,128 @@ class PlaylistForm(FlaskForm):
 
 
 #playlist generation
+# @app.route('/generate_playlist', methods=['GET', 'POST'])
+# def generate_playlist():
+#     if 'loggedin' not in session:
+#         flash('Please log in to continue.', 'error')
+#         return redirect(url_for('login'))
+
+#     if request.method == 'POST':
+#         genre = request.form.get('genre')
+#         playlist_length = request.form.get('playlist_length')
+#         mood = request.form.get('mood')
+#         playlist_name = request.form.get('playlist_name')
+#     else:
+#         genre = request.args.get('genre')
+#         playlist_length = request.args.get('playlist_length')
+#         mood = request.args.get('mood')
+#         playlist_name = request.args.get('playlist_name')
+
+#     if not all([genre, playlist_length, mood, playlist_name]):
+#         flash("Missing input values. Please fill all fields.", "error")
+#         return redirect(url_for('home'))
+
+#     try:
+#         playlist_length = int(playlist_length)
+#     except ValueError:
+#         flash("Invalid playlist length.", "error")
+#         return redirect(url_for('home'))
+
+#     # Step 1: Fetch songs from MongoDB
+#     #Mood-specific Thaat mapping
+#     mood_thaats = {
+#         'happy': [ 'Kafi', 'Asavari', 'Bhairav', 'Marva', 'Poorvi', 'Todi', 'Bhairavi'],
+#         'sad': ['Marva', 'Poorvi', 'Todi'],
+#         'neutral': ['Bilaval', 'Kafi', 'Bhairav', 'Todi', 'Khamaj', 'Poorvi'],
+#         'angry': ['Bhairavi', 'Asavari', 'Todi' ],
+#         'calm' : ['Kalyan', 'Kafi', 'Bilawal', 'Bhairav'],
+#         'pleased' :['Bilaval', 'Kalyan', 'Khamaj', 'Kafi'],
+#         'none' :['Bilaval', 'Kalyan', 'Khamaj', 'Kafi']
+#     }
+
+#     selected_thaats = mood_thaats.get(mood.lower(), [])
+#     print(f"[DEBUG] MOOD_THAAT - {mood.upper()} → {selected_thaats}")
+#     if not selected_thaats:
+#         flash("Invalid mood or no Thaat mapping found.", "error")
+#         return render_template('playlist.html', playlist_name=playlist_name, audio_files=[])
+
+#     songs = song_db[genre.lower()].find({"thaat": {"$in": selected_thaats}}, {'filename': 1})
+#     filenames = [song['filename'] for song in songs if 'filename' in song]
+
+#     if not filenames:
+#         flash("No songs found for the selected mood and genre.", "error")
+#         return render_template('playlist.html', playlist_name=playlist_name, audio_files=[], is_premium=False)
+
+#     selected = random.sample(filenames, min(playlist_length, len(filenames)))
+
+#     # Step 2: Fetch corresponding Spotify links
+#     folder_id = get_folder_id(genre)
+#     query = f"'{folder_id}' in parents and mimeType='audio/mpeg'"
+#     results = service.files().list(q=query, fields="files(id, name)").execute()
+#     items = results.get('files', [])
+
+#     audio_files = []
+#     for file in items:
+#         song_name = file['name'].replace('.mp3', '').replace('_', ' ')
+#         if file['name'].replace('.mp3', '.pickle') in selected:
+#             try:
+#                 result = sp.search(q=song_name, type='track', limit=1)
+#                 if result['tracks']['items']:
+#                     track_url = result['tracks']['items'][0]['external_urls']['spotify']
+#                     audio_files.append({'name': song_name, 'url': track_url})
+#             except Exception as e:
+#                 print(f"[Spotify ERROR] {song_name}: {e}")
+
+#     user_id = session.get('user_id')
+#     username = session.get('username')
+#     is_premium = session.get('membership') == 'active'
+
+#     # Check for duplicate playlist name
+#     existing = playlist_collection.find_one({'user_id': user_id, 'playlist_name': playlist_name})
+#     if existing:
+#         return '''
+#             <script>
+#                 alert("You already have a playlist with this name. Please choose another name.");
+#                 window.history.back();
+#             </script>
+#         '''
+
+#     # Free users can only create 3 playlists
+#     playlist_count = playlist_collection.count_documents({'user_id': user_id})
+#     if not is_premium and playlist_count >= 3:
+#         flash("Free users can only create 3 playlists. Upgrade to Premium to create more.", "error")
+#         return redirect(url_for('membership'))
+
+#     # Save playlist
+#     if user_id and playlist_name and audio_files:
+#         playlist_doc = {
+#             'user_id': user_id,
+#             'username': username,
+#             'playlist_name': playlist_name,
+#             'mood': mood,
+#             'genre': genre,
+#             'created_at': datetime.utcnow(),
+#             'songs': audio_files,
+#             'membership': 'Premium' if is_premium else 'Free'
+#         }
+
+#         try:
+#             result = playlist_collection.insert_one(playlist_doc)
+#             print(f"[MongoDB] Playlist saved with ID: {result.inserted_id}")
+#         except Exception as e:
+#             print(f"[MongoDB ERROR] Could not insert playlist: {e}")
+#             flash("An error occurred while saving your playlist.", "error")
+#             return redirect(url_for('home'))
+
+#     #Return with flag to indicate membership
+#     return render_template(
+#         'playlist.html',
+#         playlist_name=playlist_name,
+#         audio_files=audio_files,
+#         is_premium=is_premium
+#     )
+
+
 @app.route('/generate_playlist', methods=['GET', 'POST'])
 def generate_playlist():
     if 'loggedin' not in session:
@@ -200,14 +324,14 @@ def generate_playlist():
         return redirect(url_for('home'))
 
     # Step 1: Fetch songs from MongoDB
-    #Mood-specific Thaat mapping
     mood_thaats = {
         'happy': [ 'Kafi', 'Asavari', 'Bhairav', 'Marva', 'Poorvi', 'Todi', 'Bhairavi'],
         'sad': ['Marva', 'Poorvi', 'Todi'],
         'neutral': ['Bilaval', 'Kafi', 'Bhairav', 'Todi', 'Khamaj', 'Poorvi'],
         'angry': ['Bhairavi', 'Asavari', 'Todi' ],
         'calm' : ['Kalyan', 'Kafi', 'Bilawal', 'Bhairav'],
-        'pleased' :['Bilaval', 'Kalyan', 'Khamaj', 'Kafi']
+        'pleased' :['Bilaval', 'Kalyan', 'Khamaj', 'Kafi'],
+        'none' :['Bilaval', 'Kalyan', 'Khamaj', 'Kafi']
     }
 
     selected_thaats = mood_thaats.get(mood.lower(), [])
@@ -225,7 +349,7 @@ def generate_playlist():
 
     selected = random.sample(filenames, min(playlist_length, len(filenames)))
 
-    # Step 2: Fetch corresponding Spotify links
+    # Step 2: Fetch songs from Google Drive instead of Spotify
     folder_id = get_folder_id(genre)
     query = f"'{folder_id}' in parents and mimeType='audio/mpeg'"
     results = service.files().list(q=query, fields="files(id, name)").execute()
@@ -236,18 +360,26 @@ def generate_playlist():
         song_name = file['name'].replace('.mp3', '').replace('_', ' ')
         if file['name'].replace('.mp3', '.pickle') in selected:
             try:
-                result = sp.search(q=song_name, type='track', limit=1)
-                if result['tracks']['items']:
-                    track_url = result['tracks']['items'][0]['external_urls']['spotify']
-                    audio_files.append({'name': song_name, 'url': track_url})
+                # ✅ Stream using Google Drive view URL (no download)
+                file_id = file['id']
+                drive_view_url = f"https://drive.google.com/file/d/{file['id']}/view"  # optional for web
+                audio_files.append({'name': song_name, 'url': drive_view_url})
+
+
+                # 🔒 Commented Spotify logic
+                # result = sp.search(q=song_name, type='track', limit=1)
+                # if result['tracks']['items']:
+                #     track_url = result['tracks']['items'][0]['external_urls']['spotify']
+                #     audio_files.append({'name': song_name, 'url': track_url})
             except Exception as e:
-                print(f"[Spotify ERROR] {song_name}: {e}")
+                print(f"[Drive ERROR] {song_name}: {e}")
+
+
 
     user_id = session.get('user_id')
     username = session.get('username')
     is_premium = session.get('membership') == 'active'
 
-    # Check for duplicate playlist name
     existing = playlist_collection.find_one({'user_id': user_id, 'playlist_name': playlist_name})
     if existing:
         return '''
@@ -257,13 +389,11 @@ def generate_playlist():
             </script>
         '''
 
-    # Free users can only create 3 playlists
     playlist_count = playlist_collection.count_documents({'user_id': user_id})
     if not is_premium and playlist_count >= 3:
         flash("Free users can only create 3 playlists. Upgrade to Premium to create more.", "error")
         return redirect(url_for('membership'))
 
-    # Save playlist
     if user_id and playlist_name and audio_files:
         playlist_doc = {
             'user_id': user_id,
@@ -283,14 +413,94 @@ def generate_playlist():
             print(f"[MongoDB ERROR] Could not insert playlist: {e}")
             flash("An error occurred while saving your playlist.", "error")
             return redirect(url_for('home'))
+        
+    session['current_playlist'] = audio_files
+    session['playlist_name'] = playlist_name  
+    session['is_premium'] = is_premium
 
-    #Return with flag to indicate membership
+
     return render_template(
         'playlist.html',
         playlist_name=playlist_name,
         audio_files=audio_files,
         is_premium=is_premium
     )
+    
+
+@app.route('/current_playlist')
+def show_current_playlist():
+    audio_files = session.get('current_playlist')
+    playlist_name = session.get('playlist_name', 'Your Playlist')
+    is_premium = session.get('is_premium', False)
+
+    if not audio_files:
+        return redirect(url_for('home'))
+
+    return render_template(
+        'playlist.html',
+        audio_files=audio_files,
+        playlist_name=playlist_name,
+        is_premium=is_premium
+    )
+
+
+@app.route('/stream/<file_id>')
+def stream_from_drive(file_id):
+    drive_url = f'https://docs.google.com/uc?export=download&id={file_id}'
+    headers = {'User-Agent': 'Mozilla/5.0'}
+
+    # Forward Range header for seeking
+    if 'Range' in request.headers:
+        headers['Range'] = request.headers['Range']
+
+    r = requests.get(drive_url, stream=True, headers=headers)
+
+    if r.status_code not in (200, 206):
+        return f"Failed to fetch from Google Drive (code {r.status_code})", 502
+
+    def generate():
+        for chunk in r.iter_content(chunk_size=8192):
+            if chunk:
+                yield chunk
+
+    # Detect content length and range
+    content_length = r.headers.get('Content-Length')
+    content_range = r.headers.get('Content-Range')
+
+    response_headers = {
+        'Content-Type': 'audio/mpeg',
+        'Accept-Ranges': 'bytes',
+    }
+
+    if content_length:
+        response_headers['Content-Length'] = content_length
+    if content_range:
+        response_headers['Content-Range'] = content_range
+        status_code = 206  # Partial content for seek
+    else:
+        status_code = 200
+
+    return Response(stream_with_context(generate()), status=status_code, headers=response_headers)
+
+    
+    
+@app.route('/media_player/<int:index>')
+def media_player(index):
+    audio_files = session.get('current_playlist')
+    return_url = request.args.get('return_url', url_for('generate_playlist'))
+
+    if not audio_files or index < 0 or index >= len(audio_files):
+        return "Invalid song index", 404
+
+    return render_template(
+        'media_player.html',
+        audio_files=audio_files,
+        index=index,
+        return_url=return_url
+    )
+
+
+
 
 
 
@@ -747,6 +957,7 @@ def verify_payment():
             sql_connection.commit()
             session['membership'] = "active"
             flash("Membership activated successfully!", "success")
+            session['is_premium'] = True
 
             return redirect(next_page)
             # return render_template('result.html',name=session['firstname'],user={'is_member':True}, prediction=session['disorder'],link1=session['link1'],link2=session['link2'],link3=session['link3'],description=session['desc'],actions1=session['a1'],actions2=session['a2'],actions3=session['a3'],actions4=session['a4'],song1=session['s1'],song2=session['s2'],song3=session['s3'], raaga=session['raag'],timeOfDay=session['tod'])
@@ -1015,8 +1226,9 @@ def delete_playlist(playlist_id):
         return jsonify({'success': True}), 200
     else:
         return jsonify({'error': 'Playlist not found'}), 404
+    
 
 
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    app.run(debug=True)
