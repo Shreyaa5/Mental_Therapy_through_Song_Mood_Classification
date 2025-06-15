@@ -1,32 +1,61 @@
+ 
+
+
 <!DOCTYPE html>
-<html>
 <html>
 <head>
     <title>Now Playing</title>
-    <style>
+<style>
         body {
             font-family: 'Arial', sans-serif;
             background-color: #e8f5e9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .back-btn {
+            align-self: flex-end;
+            margin: 20px 40px 0 0;
+            background-color: #007bff;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 6px;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .main-content {
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            margin: 0;
+            gap: 60px;
+            margin: 40px 20px;
+            width: 90%;
+            max-width: 1100px;
         }
 
-        .container {
+        .player-container,
+        .playlist-container {
             background-color: #ffffff;
-            padding: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            width: 90%;
-            max-width: 500px;
-            text-align: center;
+            padding: 30px;
+            width: 100%;
+            max-width: 500px; /* ✅ Equal width for both containers */
         }
 
         h2 {
             color: darkcyan;
-            margin-bottom: 20px;
+            margin-top: 0;
+            font-size: 22px;
         }
 
         audio {
@@ -36,6 +65,10 @@
 
         .controls {
             margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
         }
 
         .controls button {
@@ -43,7 +76,6 @@
             color: white;
             border: none;
             padding: 10px 16px;
-            margin: 6px;
             border-radius: 6px;
             font-size: 15px;
             cursor: pointer;
@@ -54,136 +86,168 @@
             background-color: #0056b3;
         }
 
-        @media (max-width: 480px) {
-            .container {
-                padding: 20px;
-            }
-
-            h2 {
-                font-size: 20px;
-            }
-
-            .controls button {
-                padding: 8px 12px;
-                font-size: 13px;
-            }
+        .playlist-container h3 {
+            margin-top: 0;
+            color: #007bff;
         }
 
-        .back-btn {
-                position: absolute;
-                top: 20px;
-                right: 30px;
-                background-color: #007bff;
-                color: white;
-                padding: 8px 16px;
-                text-decoration: none;
-                font-weight: bold;
-                border-radius: 6px;
-                z-index: 999;
-                transition: background-color 0.3s ease;
-            }
-        .back-btn:hover {
-            background-color: #0056b3;
+        ul#playlistDisplay {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 400px;
+            overflow-y: auto;
         }
 
+        ul#playlistDisplay li {
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            background-color: #f1f1f1;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 22px;
+            color: #222;
+        }
 
+        ul#playlistDisplay li.active {
+            background-color: #cce5ff;
+            font-weight: bold;
+            border-left: 4px solid #007bff;
+        }
+
+        ul#playlistDisplay li:hover {
+            background-color: #d9edf7;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+                align-items: center;
+                gap: 30px;
+            }
+
+            .player-container, .playlist-container {
+                max-width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
     <a href="{{ return_url }}" class="back-btn">← Back to Playlist</a>
 
-<div class="container">
-    <h2 id="songTitle">Loading...</h2>
-    <audio id="audioPlayer" controls autoplay></audio>
+    <div class="main-content">
+        <!-- Player Container -->
+        <div class="player-container">
+            <h2 id="songTitle">Loading...</h2>
+            <audio id="audioPlayer" controls autoplay></audio>
 
-    <div class="controls">
-        <button onclick="toggleShuffle()" title="Shuffle">🔀</button>
-        <button onclick="prevSong()" title="Previous">⏮️</button>
-        <button onclick="seek(-10)" title="Rewind 10s">⏪</button>
-        <button onclick="seek(10)" title="Forward 10s">⏩</button>
-        <button onclick="nextSong()" title="Next">⏭️</button>
-        <button onclick="toggleRepeat()" title="Repeat">🔁</button>
+            <div class="controls">
+                <button onclick="toggleShuffle()" title="Shuffle">🔀</button>
+                <button onclick="prevSong()" title="Previous">⏮️</button>
+                <button onclick="seek(-10)" title="Rewind 10s">⏪</button>
+                <button onclick="seek(10)" title="Forward 10s">⏩</button>
+                <button onclick="nextSong()" title="Next">⏭️</button>
+                <button onclick="toggleRepeat()" title="Repeat">🔁</button>
+            </div>
+        </div>
+
+        <!-- Playlist Sidebar -->
+        <div class="playlist-container">
+            <h3>Playlist</h3>
+            <ul id="playlistDisplay"></ul>
+        </div>
     </div>
-</div>
 
-<script>
-    const playlist = {{ audio_files|tojson }};
-    let currentIndex = {{ index }};
-    const player = document.getElementById("audioPlayer");
-    const title = document.getElementById("songTitle");
+    <script>
+        const playlist = {{ audio_files|tojson }};
+        let currentIndex = {{ index }};
+        const player = document.getElementById("audioPlayer");
+        const title = document.getElementById("songTitle");
+        const playlistDisplay = document.getElementById("playlistDisplay");
 
-    let shuffle = false;
-    let repeat = false;
+        let shuffle = false;
+        let repeat = false;
 
-    
+        function loadSong() {
+            const song = playlist[currentIndex];
+            title.textContent = song.name;
+            player.src = song.url;
+            player.play().catch(err => {
+                console.warn("Playback failed or blocked:", err);
+            });
+            highlightCurrent();
+        }
 
-    function getDriveStreamUrl(viewUrl) {
-    const match = viewUrl.match(/\/file\/d\/([^/]+)\//);
-    if (!match) return viewUrl;
-    return `https://docs.google.com/uc?export=download&id=${match[1]}`;
-}
+        function seek(seconds) {
+            player.currentTime += seconds;
+        }
 
-function loadSong() {
-    const song = playlist[currentIndex];
-    title.textContent = song.name;
+        function prevSong() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                loadSong();
+            }
+        }
 
-    console.log("Now playing:", song.url);  
-
-    player.src = song.url;
-    player.play().catch(err => {
-        console.warn("Playback failed or blocked:", err);
-    });
-}
-
-
-
-
-    function seek(seconds) {
-        player.currentTime += seconds;
-    }
-
-    function prevSong() {
-        if (currentIndex > 0) {
-            currentIndex--;
+        function nextSong() {
+            if (shuffle) {
+                let nextIndex;
+                do {
+                    nextIndex = Math.floor(Math.random() * playlist.length);
+                } while (nextIndex === currentIndex && playlist.length > 1);
+                currentIndex = nextIndex;
+            } else {
+                currentIndex = (currentIndex + 1) % playlist.length;
+            }
             loadSong();
         }
-    }
 
-    function nextSong() {
-        if (shuffle) {
-            let nextIndex;
-            do {
-                nextIndex = Math.floor(Math.random() * playlist.length);
-            } while (nextIndex === currentIndex && playlist.length > 1);
-            currentIndex = nextIndex;
-        } else {
-            currentIndex = (currentIndex + 1) % playlist.length;
+        function toggleShuffle() {
+            shuffle = !shuffle;
+            alert("Shuffle " + (shuffle ? "enabled" : "disabled"));
         }
-        loadSong();
-    }
 
-
-    function toggleShuffle() {
-        shuffle = !shuffle;
-        alert("Shuffle " + (shuffle ? "enabled" : "disabled"));
-    }
-
-    function toggleRepeat() {
-        repeat = !repeat;
-        alert("Repeat " + (repeat ? "enabled" : "disabled"));
-    }
-
-    player.addEventListener('ended', () => {
-        if (repeat) {
-            loadSong(); // replay current
-        } else {
-            nextSong();
+        function toggleRepeat() {
+            repeat = !repeat;
+            alert("Repeat " + (repeat ? "enabled" : "disabled"));
         }
-    });
 
-    window.onload = loadSong;
+        player.addEventListener('ended', () => {
+            if (repeat) {
+                loadSong();
+            } else {
+                nextSong();
+            }
+        });
 
-</script>
+        function highlightCurrent() {
+            const items = playlistDisplay.querySelectorAll("li");
+            items.forEach((li, idx) => {
+                li.classList.toggle("active", idx === currentIndex);
+            });
+        }
 
+        function renderPlaylist() {
+            playlistDisplay.innerHTML = "";
+            playlist.forEach((song, idx) => {
+                const li = document.createElement("li");
+                li.textContent = song.name;
+                if (idx === currentIndex) {
+                    li.classList.add("active");
+                }
+                li.addEventListener("click", () => {
+                    currentIndex = idx;
+                    loadSong();
+                });
+                playlistDisplay.appendChild(li);
+            });
+        }
+
+        window.onload = () => {
+            renderPlaylist();
+            loadSong();
+        };
+    </script>
 </body>
 </html>
