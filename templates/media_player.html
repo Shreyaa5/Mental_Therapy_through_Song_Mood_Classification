@@ -115,25 +115,28 @@
     let shuffle = false;
     let repeat = false;
 
-    function extractDriveFileId(viewUrl) {
-        const match = viewUrl.match(/\/d\/([a-zA-Z0-9_-]+)\//);
-        return match ? match[1] : "";
-    }
+    
 
-    function getStreamUrl(fileId) {
-        return `/stream/${fileId}`;
-    }
+    function getDriveStreamUrl(viewUrl) {
+    const match = viewUrl.match(/\/file\/d\/([^/]+)\//);
+    if (!match) return viewUrl;
+    return `https://docs.google.com/uc?export=download&id=${match[1]}`;
+}
 
-    function loadSong() {
-        const song = playlist[currentIndex];
-        const fileId = extractDriveFileId(song.url);
-        const streamUrl = getStreamUrl(fileId);
-        title.textContent = song.name;
-        player.src = streamUrl;
-        player.play().catch(err => {
-            console.warn("Playback failed or blocked:", err);
-        });
-    }
+function loadSong() {
+    const song = playlist[currentIndex];
+    title.textContent = song.name;
+
+    console.log("Now playing:", song.url);  
+
+    player.src = song.url;
+    player.play().catch(err => {
+        console.warn("Playback failed or blocked:", err);
+    });
+}
+
+
+
 
     function seek(seconds) {
         player.currentTime += seconds;

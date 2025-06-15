@@ -296,24 +296,266 @@ class PlaylistForm(FlaskForm):
 #     )
 
 
+    
+# @app.route('/generate_playlist', methods=['GET', 'POST'])
+# def generate_playlist():
+#     if 'loggedin' not in session:
+#         flash('Please log in to continue.', 'error')
+#         return redirect(url_for('login'))
+
+#     # Get input
+#     if request.method == 'POST':
+#         genre = request.form.get('genre')
+#         playlist_length = request.form.get('playlist_length')
+#         playlist_name = request.form.get('playlist_name')
+#     else:
+#         genre = request.args.get('genre')
+#         playlist_length = request.args.get('playlist_length')
+#         playlist_name = request.args.get('playlist_name')
+
+#     # ✅ Hardcode mood here
+#     mood = 'happy'
+#     print(f"[DEBUG] Forced mood: {mood}")
+
+#     if not all([genre, playlist_length, playlist_name]):
+#         flash("Missing input values. Please fill all fields.", "error")
+#         return redirect(url_for('home'))
+
+#     try:
+#         playlist_length = int(playlist_length)
+#     except ValueError:
+#         flash("Invalid playlist length.", "error")
+#         return redirect(url_for('home'))
+
+#     # ✅ Fetch from collection based on genre (like hindi-modern)
+#     collection = song_db[genre.lower()]
+#     print(f"[DEBUG] Fetching from collection: {genre.lower()}")
+
+#     # ✅ Query songs where mood array contains 'Calm' (case-insensitive)
+#     mood_regex = {"$regex": "^calm$", "$options": "i"}
+#     mongo_songs = list(collection.find({ "mood": mood_regex }))
+
+#     if not mongo_songs:
+#         flash("No songs found for the mood 'Calm' in this genre.", "error")
+#         return render_template('playlist.html', playlist_name=playlist_name, audio_files=[], is_premium=False, mood=mood)
+
+#     print(f"[DEBUG] Songs matched from DB: {len(mongo_songs)}")
+
+#     # Build audio_files list from filenames (simulate Google Drive link)
+#     audio_files = []
+#     for song in mongo_songs:
+#         filename = song.get("filename", "")
+#         song_name = filename.replace('.pickle', '')
+#         file_id = filename.replace('.pickle', '')  # Just use song name as fake ID
+#         stream_url = f"/stream_fake/{file_id}"  # Replace with real if needed
+
+#         audio_files.append({
+#             "name": song_name,
+#             "url": stream_url
+#         })
+
+#     # ✅ Remove duplicates by name
+#     seen = set()
+#     final_audio_files = []
+#     for s in audio_files:
+#         if s['url'] not in seen:
+#             final_audio_files.append(s)
+#             seen.add(s['url'])
+
+#     # ✅ Limit to requested playlist length
+#     if len(final_audio_files) > playlist_length:
+#         final_audio_files = random.sample(final_audio_files, playlist_length)
+
+#     # ✅ Premium check
+#     user_id = session.get('user_id')
+#     username = session.get('username')
+#     is_premium = session.get('membership') == 'active'
+
+#     existing = playlist_collection.find_one({'user_id': user_id, 'playlist_name': playlist_name})
+#     if existing:
+#         return '''
+#             <script>
+#                 alert("You already have a playlist with this name. Please choose another name.");
+#                 window.history.back();
+#             </script>
+#         '''
+
+#     playlist_count = playlist_collection.count_documents({'user_id': user_id})
+#     if not is_premium and playlist_count >= 3:
+#         flash("Free users can only create 3 playlists. Upgrade to Premium to create more.", "error")
+#         return redirect(url_for('membership'))
+
+#     # ✅ Save playlist
+#     if final_audio_files:
+#         playlist_doc = {
+#             'user_id': user_id,
+#             'username': username,
+#             'playlist_name': playlist_name,
+#             'mood': mood,
+#             'genre': genre,
+#             'created_at': datetime.utcnow(),
+#             'songs': final_audio_files,
+#             'membership': 'Premium' if is_premium else 'Free'
+#         }
+
+#         playlist_collection.insert_one(playlist_doc)
+
+#     # ✅ Store in session
+#     session['current_playlist'] = final_audio_files
+#     session['playlist_name'] = playlist_name
+#     session['is_premium'] = is_premium
+
+#     # ✅ Pass correct mood to template
+#     return render_template(
+#         'playlist.html',
+#         playlist_name=playlist_name,
+#         audio_files=final_audio_files,
+#         is_premium=is_premium,
+#         mood=mood
+#     )
+
+
+# @app.route('/generate_playlist', methods=['GET', 'POST'])
+# def generate_playlist():
+#     if 'loggedin' not in session:
+#         flash('Please log in to continue.', 'error')
+#         return redirect(url_for('login'))
+
+#     # Get input
+#     if request.method == 'POST':
+#         genre = request.form.get('genre')
+#         playlist_length = request.form.get('playlist_length')
+#         playlist_name = request.form.get('playlist_name')
+#     else:
+#         genre = request.args.get('genre')
+#         playlist_length = request.args.get('playlist_length')
+#         playlist_name = request.args.get('playlist_name')
+
+#     # ✅ Hardcode mood here
+#     mood = 'happy'
+#     print(f"[DEBUG] Forced mood: {mood}")
+
+#     if not all([genre, playlist_length, playlist_name]):
+#         flash("Missing input values. Please fill all fields.", "error")
+#         return redirect(url_for('home'))
+
+#     try:
+#         playlist_length = int(playlist_length)
+#     except ValueError:
+#         flash("Invalid playlist length.", "error")
+#         return redirect(url_for('home'))
+
+#     # ✅ Fetch from collection based on genre (like hindi-modern)
+#     collection = song_db[genre.lower()]
+#     print(f"[DEBUG] Fetching from collection: {genre.lower()}")
+
+#     # ✅ Query songs where mood array contains 'Calm' (case-insensitive)
+#     mood_regex = {"$regex": "^calm$", "$options": "i"}
+#     mongo_songs = list(collection.find({ "mood": mood_regex }))
+
+#     if not mongo_songs:
+#         flash("No songs found for the mood 'Calm' in this genre.", "error")
+#         return render_template('playlist.html', playlist_name=playlist_name, audio_files=[], is_premium=False, mood=mood)
+
+#     print(f"[DEBUG] Songs matched from DB: {len(mongo_songs)}")
+
+#     # Build audio_files list from filenames (simulate Google Drive link)
+#     audio_files = []
+#     for song in mongo_songs:
+#         filename = song.get("filename", "")
+#         song_name = filename.replace('.pickle', '')
+#         song_id = str(song['_id'])  # MongoDB ObjectId
+#         stream_url = url_for('stream_song', song_id=song_id)
+
+#         audio_files.append({
+#             "name": song_name,
+#             "url": stream_url
+#         })
+
+
+#     # ✅ Remove duplicates by name
+#     seen = set()
+#     final_audio_files = []
+#     for s in audio_files:
+#         if s['url'] not in seen:
+#             final_audio_files.append(s)
+#             seen.add(s['url'])
+
+#     # ✅ Limit to requested playlist length
+#     if len(final_audio_files) > playlist_length:
+#         final_audio_files = random.sample(final_audio_files, playlist_length)
+
+#     # ✅ Premium check
+#     user_id = session.get('user_id')
+#     username = session.get('username')
+#     is_premium = session.get('membership') == 'active'
+
+#     existing = playlist_collection.find_one({'user_id': user_id, 'playlist_name': playlist_name})
+#     if existing:
+#         return '''
+#             <script>
+#                 alert("You already have a playlist with this name. Please choose another name.");
+#                 window.history.back();
+#             </script>
+#         '''
+
+#     playlist_count = playlist_collection.count_documents({'user_id': user_id})
+#     if not is_premium and playlist_count >= 3:
+#         flash("Free users can only create 3 playlists. Upgrade to Premium to create more.", "error")
+#         return redirect(url_for('membership'))
+
+#     # ✅ Save playlist
+#     if final_audio_files:
+#         playlist_doc = {
+#             'user_id': user_id,
+#             'username': username,
+#             'playlist_name': playlist_name,
+#             'mood': mood,
+#             'genre': genre,
+#             'created_at': datetime.utcnow(),
+#             'songs': final_audio_files,
+#             'membership': 'Premium' if is_premium else 'Free'
+#         }
+
+#         playlist_collection.insert_one(playlist_doc)
+
+#     # ✅ Store in session
+#     session['current_playlist'] = final_audio_files
+#     session['playlist_name'] = playlist_name
+#     session['is_premium'] = is_premium
+#     session['last_genre'] = genre.lower()
+
+
+#     # ✅ Pass correct mood to template
+#     return render_template(
+#         'playlist.html',
+#         playlist_name=playlist_name,
+#         audio_files=final_audio_files,
+#         is_premium=is_premium,
+#         mood=mood
+#     )
+
 @app.route('/generate_playlist', methods=['GET', 'POST'])
 def generate_playlist():
     if 'loggedin' not in session:
         flash('Please log in to continue.', 'error')
         return redirect(url_for('login'))
 
+    # Get inputs
     if request.method == 'POST':
         genre = request.form.get('genre')
+        #mood = request.form.get('mood')(egulo comment kore dilam, jate mood hardcoded hoye jaye)
         playlist_length = request.form.get('playlist_length')
-        mood = request.form.get('mood')
         playlist_name = request.form.get('playlist_name')
     else:
         genre = request.args.get('genre')
+        #mood = request.args.get('mood')
         playlist_length = request.args.get('playlist_length')
-        mood = request.args.get('mood')
         playlist_name = request.args.get('playlist_name')
 
-    if not all([genre, playlist_length, mood, playlist_name]):
+    mood = 'sad'  # Hardcoded mood(ata urie dibi)
+
+    if not all([genre, playlist_length, playlist_name]):
         flash("Missing input values. Please fill all fields.", "error")
         return redirect(url_for('home'))
 
@@ -323,65 +565,63 @@ def generate_playlist():
         flash("Invalid playlist length.", "error")
         return redirect(url_for('home'))
 
-    # Step 1: Fetch songs from MongoDB
-    mood_thaats = {
-        'happy': [ 'Kafi', 'Asavari', 'Bhairav', 'Marva', 'Poorvi', 'Todi', 'Bhairavi'],
-        'sad': ['Marva', 'Poorvi', 'Todi'],
-        'neutral': ['Bilaval', 'Kafi', 'Bhairav', 'Todi', 'Khamaj', 'Poorvi'],
-        'angry': ['Bhairavi', 'Asavari', 'Todi' ],
-        'calm' : ['Kalyan', 'Kafi', 'Bilawal', 'Bhairav'],
-        'pleased' :['Bilaval', 'Kalyan', 'Khamaj', 'Kafi'],
-        'none' :['Bilaval', 'Kalyan', 'Khamaj', 'Kafi']
-    }
+    # ✅ Get Drive folder ID based on genre
+    def get_folder_id(genre):
+        folder_map = {
+            'bengali': '1gifXb2IjlJoIYs9mCZW1-0XITQ6qr1J4',
+            'classical': '11gCZK8C4lWcAX77tCuYRbi5jC8cbMhnW',
+            'hindi-retro': '1VAV9M8cYo9ZMAkBoMZrJpe4Kupx8Jst3',
+            'hindi-modern': '1Ai-dpQ6s2_E_ShWifMHLoOvypZoBzymR'
+        }
+        return folder_map.get(genre.lower())
 
-    selected_thaats = mood_thaats.get(mood.lower(), [])
-    print(f"[DEBUG] MOOD_THAAT - {mood.upper()} → {selected_thaats}")
-    if not selected_thaats:
-        flash("Invalid mood or no Thaat mapping found.", "error")
-        return render_template('playlist.html', playlist_name=playlist_name, audio_files=[])
-
-    songs = song_db[genre.lower()].find({"thaat": {"$in": selected_thaats}}, {'filename': 1})
-    filenames = [song['filename'] for song in songs if 'filename' in song]
-
-    if not filenames:
-        flash("No songs found for the selected mood and genre.", "error")
-        return render_template('playlist.html', playlist_name=playlist_name, audio_files=[], is_premium=False)
-
-    selected = random.sample(filenames, min(playlist_length, len(filenames)))
-
-    # Step 2: Fetch songs from Google Drive instead of Spotify
     folder_id = get_folder_id(genre)
+    if not folder_id:
+        flash("Google Drive folder not found for this genre.", "error")
+        return render_template('playlist.html', playlist_name=playlist_name, audio_files=[], is_premium=False, mood=mood)
+
+    # ✅ Get matching MongoDB songs with mood
+    collection = song_db[genre.lower()]
+    mood_regex = {"$regex": f"^{mood}$", "$options": "i"}
+    mongo_songs = list(collection.find({ "mood": mood_regex }, {"filename": 1}))
+
+    if not mongo_songs:
+        flash("No songs found in DB for selected mood.", "error")
+        return render_template('playlist.html', playlist_name=playlist_name, audio_files=[], is_premium=False, mood=mood)
+
+    all_pickle_names = [song['filename'] for song in mongo_songs if 'filename' in song]
+
+    # ✅ Random sample from available
+    selected = random.sample(all_pickle_names, min(playlist_length, len(all_pickle_names)))
+
+    # ✅ Fetch Google Drive MP3s
     query = f"'{folder_id}' in parents and mimeType='audio/mpeg'"
     results = service.files().list(q=query, fields="files(id, name)").execute()
-    items = results.get('files', [])
+    drive_files = results.get('files', [])
 
     audio_files = []
-    for file in items:
-        song_name = file['name'].replace('.mp3', '').replace('_', ' ')
-        if file['name'].replace('.mp3', '.pickle') in selected:
-            try:
-                # ✅ Stream using Google Drive view URL (no download)
-                file_id = file['id']
-                drive_view_url = f"https://drive.google.com/file/d/{file['id']}/view"  # optional for web
-                audio_files.append({'name': song_name, 'url': drive_view_url})
+    for file in drive_files:
+        file_name = file['name']  # e.g., Tum_Hi_Ho.mp3
+        base_name = file_name.replace('.mp3', '')
+        pickle_equivalent = base_name + '.pickle'
 
+        if pickle_equivalent in selected:
+            stream_url = stream_url = url_for('stream_from_drive', file_id=file['id'])
+            audio_files.append({
+                'name': base_name.replace('_', ' '),
+                'url': stream_url
+            })
 
-                # 🔒 Commented Spotify logic
-                # result = sp.search(q=song_name, type='track', limit=1)
-                # if result['tracks']['items']:
-                #     track_url = result['tracks']['items'][0]['external_urls']['spotify']
-                #     audio_files.append({'name': song_name, 'url': track_url})
-            except Exception as e:
-                print(f"[Drive ERROR] {song_name}: {e}")
+    if not audio_files:
+        flash("No matching files found on Drive.", "error")
+        return render_template('playlist.html', playlist_name=playlist_name, audio_files=[], is_premium=False, mood=mood)
 
-
-
+    # ✅ Premium check
     user_id = session.get('user_id')
     username = session.get('username')
     is_premium = session.get('membership') == 'active'
 
-    existing = playlist_collection.find_one({'user_id': user_id, 'playlist_name': playlist_name})
-    if existing:
+    if playlist_collection.find_one({'user_id': user_id, 'playlist_name': playlist_name}):
         return '''
             <script>
                 alert("You already have a playlist with this name. Please choose another name.");
@@ -389,43 +629,38 @@ def generate_playlist():
             </script>
         '''
 
-    playlist_count = playlist_collection.count_documents({'user_id': user_id})
-    if not is_premium and playlist_count >= 3:
-        flash("Free users can only create 3 playlists. Upgrade to Premium to create more.", "error")
+    if not is_premium and playlist_collection.count_documents({'user_id': user_id}) >= 3:
+        flash("Free users can only create 3 playlists.", "error")
         return redirect(url_for('membership'))
 
-    if user_id and playlist_name and audio_files:
-        playlist_doc = {
-            'user_id': user_id,
-            'username': username,
-            'playlist_name': playlist_name,
-            'mood': mood,
-            'genre': genre,
-            'created_at': datetime.utcnow(),
-            'songs': audio_files,
-            'membership': 'Premium' if is_premium else 'Free'
-        }
+    # ✅ Save playlist
+    playlist_doc = {
+        'user_id': user_id,
+        'username': username,
+        'playlist_name': playlist_name,
+        'mood': mood,
+        'genre': genre,
+        'created_at': datetime.utcnow(),
+        'songs': audio_files,
+        'membership': 'Premium' if is_premium else 'Free'
+    }
+    playlist_collection.insert_one(playlist_doc)
 
-        try:
-            result = playlist_collection.insert_one(playlist_doc)
-            print(f"[MongoDB] Playlist saved with ID: {result.inserted_id}")
-        except Exception as e:
-            print(f"[MongoDB ERROR] Could not insert playlist: {e}")
-            flash("An error occurred while saving your playlist.", "error")
-            return redirect(url_for('home'))
-        
+    # ✅ Store session
     session['current_playlist'] = audio_files
-    session['playlist_name'] = playlist_name  
+    session['playlist_name'] = playlist_name
     session['is_premium'] = is_premium
-
+    session['last_genre'] = genre.lower()
 
     return render_template(
         'playlist.html',
         playlist_name=playlist_name,
         audio_files=audio_files,
-        is_premium=is_premium
+        is_premium=is_premium,
+        mood=mood
     )
-    
+
+
 
 @app.route('/current_playlist')
 def show_current_playlist():
@@ -442,6 +677,21 @@ def show_current_playlist():
         playlist_name=playlist_name,
         is_premium=is_premium
     )
+    
+    
+@app.route('/stream_song/<song_id>')
+def stream_song(song_id):
+    try:
+        genre = session.get('last_genre', 'classical')
+        collection = song_db[genre]
+        song = collection.find_one({"_id": ObjectId(song_id)})
+        if not song or 'file_data' not in song:
+            return "Song not found", 404
+
+        return Response(song['file_data'], mimetype='audio/mpeg')
+    except Exception as e:
+        print(f"[STREAM ERROR] {e}")
+        return "Streaming error", 500
 
 
 @app.route('/stream/<file_id>')
@@ -498,11 +748,6 @@ def media_player(index):
         index=index,
         return_url=return_url
     )
-
-
-
-
-
 
 #users can see their previous playlists
 @app.route('/my_playlists')
