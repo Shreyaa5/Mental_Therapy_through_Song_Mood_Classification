@@ -582,6 +582,7 @@ def generate_playlist():
 
     # ✅ Get matching MongoDB songs with mood
     print(genre)
+
     if(genre.lower() == "classical"):
         mood_thaats = {
         'happy': [ 'Kafi', 'Asavari', 'Bhairav', 'Marva', 'Poorvi', 'Todi', 'Bhairavi'],
@@ -592,9 +593,10 @@ def generate_playlist():
         'pleased' :['Bilaval', 'Kalyan', 'Khamaj', 'Kafi'],
         'none' :['Bilaval', 'Kalyan', 'Khamaj', 'Kafi']
         }
+        
 
         selected_thaats = mood_thaats.get(mood.lower(), [])
-        print(f"[DEBUG] MOOD_THAAT - {mood.upper()} → {selected_thaats}")
+        # print(f"[DEBUG] MOOD_THAAT - {mood.upper()} → {selected_thaats}")
         if not selected_thaats:
             flash("Invalid mood or no Thaat mapping found.", "error")
             return render_template('playlist.html', playlist_name=playlist_name, audio_files=[])

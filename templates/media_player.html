@@ -1,253 +1,403 @@
- 
-
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Now Playing</title>
-<style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #e8f5e9;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Now Playing - MelowMind</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        .back-btn {
-            align-self: flex-end;
-            margin: 20px 40px 0 0;
-            background-color: #007bff;
-            color: white;
-            padding: 8px 16px;
-            text-decoration: none;
-            font-weight: bold;
-            border-radius: 6px;
-            transition: background-color 0.3s ease;
-        }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #111;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      position: relative;
+    }
 
-        .back-btn:hover {
-            background-color: #0056b3;
-        }
+    #bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: -1;
+      opacity: 0.2;
+    }
 
-        .main-content {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 60px;
-            margin: 40px 20px;
-            width: 90%;
-            max-width: 1100px;
-        }
+    .main-content {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 40px;
+      margin: 40px 20px;
+      width: 90%;
+      max-width: 1100px;
+    }
 
-        .player-container,
-        .playlist-container {
-            background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            padding: 30px;
-            width: 100%;
-            max-width: 500px; /* ✅ Equal width for both containers */
-        }
+    .player-container,
+    .playlist-container {
+      background-color: rgba(28, 28, 28, 0.85);
+      border-radius: 16px;
+      box-shadow: 0 0 20px #0ff;
+      padding: 30px;
+      max-width: 500px;
+      width: 100%;
+    }
 
-        h2 {
-            color: darkcyan;
-            margin-top: 0;
-            font-size: 22px;
-        }
+    .back-btn {
+      align-self: flex-start;
+      margin: 20px 40px 0;
+      background-color: #0ff;
+      color: #000;
+      padding: 8px 16px;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 8px;
+      transition: background-color 0.3s ease;
+    }
 
-        audio {
-            width: 100%;
-            margin-top: 15px;
-        }
+    .back-btn:hover {
+      background-color: #00cccc;
+    }
 
-        .controls {
-            margin-top: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-        }
+    h2 {
+      text-align: center;
+      color: #0ff;
+      margin-top: 0;
+      font-size: 22px;
+    }
 
-        .controls button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 6px;
-            font-size: 15px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
+    audio {
+      width: 100%;
+      margin-top: 15px;
+      display: none;
+    }
+/* 
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
 
-        .controls button:hover {
-            background-color: #0056b3;
-        }
+    .controls button {
+      background-color: #0ff;
+      color: #000;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
 
-        .playlist-container h3 {
-            margin-top: 0;
-            color: #007bff;
-        }
+    .controls button:hover {
+      background-color: #00cccc;
+    } */
 
-        ul#playlistDisplay {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            max-height: 400px;
-            overflow-y: auto;
-        }
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
 
-        ul#playlistDisplay li {
-            padding: 12px 16px;
-            margin-bottom: 12px;
-            background-color: #f1f1f1;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            font-size: 22px;
-            color: #222;
-        }
+.main-play-btn {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+    gap: 10px;
+  
+}
 
-        ul#playlistDisplay li.active {
-            background-color: #cce5ff;
-            font-weight: bold;
-            border-left: 4px solid #007bff;
-        }
+.main-play-btn button {
+  font-size: 15px;
+  padding: 10px 16px;
+  background-color: #007bff;
+  
+}
+.main-play-btn button:hover {
+  background-color: #0056b3;
+}
 
-        ul#playlistDisplay li:hover {
-            background-color: #d9edf7;
-        }
+.other-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
 
-        @media (max-width: 768px) {
-            .main-content {
-                flex-direction: column;
-                align-items: center;
-                gap: 30px;
-            }
+.other-controls button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
 
-            .player-container, .playlist-container {
-                max-width: 100%;
-            }
-        }
-    </style>
+.other-controls button:hover {
+  background-color: #0056b3;
+}
+
+
+ .music-visualizer {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      height: 100px;
+      margin: 1.5rem 0;
+      gap: 6px;
+    }
+
+    .music-visualizer .bar {
+      width: 10px;
+      height: 20px;
+      background: #0ff;
+      border-radius: 4px;
+      animation: equalizer 1.2s infinite ease-in-out;
+      animation-play-state: paused;
+    }
+
+    .music-visualizer.playing .bar {
+      animation-play-state: running;
+    }
+
+    .music-visualizer .bar:nth-child(2) { animation-delay: -1.1s; }
+    .music-visualizer .bar:nth-child(3) { animation-delay: -1s; }
+    .music-visualizer .bar:nth-child(4) { animation-delay: -0.9s; }
+    .music-visualizer .bar:nth-child(5) { animation-delay: -0.8s; }
+
+    @keyframes equalizer {
+      0%, 100% { height: 20px; }
+      50% { height: 80px; }
+    }
+
+    .playlist-container h3 {
+      color: #0ff;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    ul#playlistDisplay {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    ul#playlistDisplay li {
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      background-color: #222;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      font-size: 18px;
+      color: #eee;
+    }
+
+    ul#playlistDisplay li.active {
+      background-color: #00ffff33;
+      font-weight: bold;
+      border-left: 4px solid #0ff;
+    }
+
+    ul#playlistDisplay li:hover {
+      background-color: #0ff2;
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        flex-direction: column;
+        gap: 30px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <a href="{{ return_url }}" class="back-btn">← Back to Playlist</a>
 
-    <div class="main-content">
-        <!-- Player Container -->
-        <div class="player-container">
-            <h2 id="songTitle">Loading...</h2>
-            <audio id="audioPlayer" controls autoplay></audio>
+<video autoplay muted loop id="bg-video">
+  <source src="{{ url_for('static', filename='video/calm.mp4') }}" type="video/mp4" />
+  Your browser does not support the video tag.
+</video>
 
-            <div class="controls">
-                <button onclick="toggleShuffle()" title="Shuffle">🔀</button>
-                <button onclick="prevSong()" title="Previous">⏮️</button>
-                <button onclick="seek(-10)" title="Rewind 10s">⏪</button>
-                <button onclick="seek(10)" title="Forward 10s">⏩</button>
-                <button onclick="nextSong()" title="Next">⏭️</button>
-                <button onclick="toggleRepeat()" title="Repeat">🔁</button>
-            </div>
-        </div>
+<a href="{{ return_url }}" class="back-btn">← Back to Playlist</a>
 
-        <!-- Playlist Sidebar -->
-        <div class="playlist-container">
-            <h3>Playlist</h3>
-            <ul id="playlistDisplay"></ul>
-        </div>
+<div class="main-content">
+
+  <!-- 🎵 Player Section -->
+  <div class="player-container">
+    <h2 id="songTitle">Loading...</h2>
+    <div class="music-visualizer" id="visualizer">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
     </div>
+    <audio id="audioPlayer" controls autoplay></audio>
 
-    <script>
-        const playlist = {{ audio_files|tojson }};
-        let currentIndex = {{ index }};
-        const player = document.getElementById("audioPlayer");
-        const title = document.getElementById("songTitle");
-        const playlistDisplay = document.getElementById("playlistDisplay");
+    <div class="controls">
+  <div class="main-play-btn">
+    <button onclick="seek(-10)" title="Rewind 10s">⏪</button>
+    <button id="playPauseBtn" onclick="togglePlayPause()" title="Play/Pause">▶️</button>
+    <button onclick="seek(10)" title="Forward 10s">⏩</button>
+  </div>
+  <div class="other-controls">
+    <button onclick="toggleShuffle()" title="Shuffle">🔀</button>
+    <button onclick="prevSong()" title="Previous">⏮️</button>
+    
+    <button onclick="nextSong()" title="Next">⏭️</button>
+    <button onclick="toggleRepeat()" title="Repeat">🔁</button>
+  </div>
+</div>
 
-        let shuffle = false;
-        let repeat = false;
 
-        function loadSong() {
-            const song = playlist[currentIndex];
-            title.textContent = song.name;
-            player.src = song.url;
-            player.play().catch(err => {
-                console.warn("Playback failed or blocked:", err);
-            });
-            highlightCurrent();
-        }
+  </div>
 
-        function seek(seconds) {
-            player.currentTime += seconds;
-        }
+  <!-- 📃 Playlist Section -->
+  <div class="playlist-container">
+    <h3>Playlist</h3>
+    <ul id="playlistDisplay"></ul>
+  </div>
 
-        function prevSong() {
-            if (currentIndex > 0) {
-                currentIndex--;
-                loadSong();
-            }
-        }
+</div>
 
-        function nextSong() {
-            if (shuffle) {
-                let nextIndex;
-                do {
-                    nextIndex = Math.floor(Math.random() * playlist.length);
-                } while (nextIndex === currentIndex && playlist.length > 1);
-                currentIndex = nextIndex;
-            } else {
-                currentIndex = (currentIndex + 1) % playlist.length;
-            }
-            loadSong();
-        }
+<script>
+  const playlist = {{ audio_files|tojson }};
+  let currentIndex = {{ index }};
+  const player = document.getElementById("audioPlayer");
+  const title = document.getElementById("songTitle");
+  const playlistDisplay = document.getElementById("playlistDisplay");
+  const visualizer = document.getElementById("visualizer");
 
-        function toggleShuffle() {
-            shuffle = !shuffle;
-            alert("Shuffle " + (shuffle ? "enabled" : "disabled"));
-        }
+  let shuffle = false;
+  let repeat = false;
 
-        function toggleRepeat() {
-            repeat = !repeat;
-            alert("Repeat " + (repeat ? "enabled" : "disabled"));
-        }
+  function loadSong() {
+    const song = playlist[currentIndex];
+    title.textContent = song.name;
+    player.src = song.url;
+    player.play().catch(err => console.warn("Playback error:", err));
+    highlightCurrent();
+  }
 
-        player.addEventListener('ended', () => {
-            if (repeat) {
-                loadSong();
-            } else {
-                nextSong();
-            }
-        });
+  function highlightCurrent() {
+    const items = playlistDisplay.querySelectorAll("li");
+    items.forEach((li, idx) => {
+      li.classList.toggle("active", idx === currentIndex);
+    });
+  }
 
-        function highlightCurrent() {
-            const items = playlistDisplay.querySelectorAll("li");
-            items.forEach((li, idx) => {
-                li.classList.toggle("active", idx === currentIndex);
-            });
-        }
+  function renderPlaylist() {
+    playlistDisplay.innerHTML = "";
+    playlist.forEach((song, idx) => {
+      const li = document.createElement("li");
+      li.textContent = song.name;
+      if (idx === currentIndex) {
+        li.classList.add("active");
+      }
+      li.addEventListener("click", () => {
+        currentIndex = idx;
+        loadSong();
+      });
+      playlistDisplay.appendChild(li);
+    });
+  }
 
-        function renderPlaylist() {
-            playlistDisplay.innerHTML = "";
-            playlist.forEach((song, idx) => {
-                const li = document.createElement("li");
-                li.textContent = song.name;
-                if (idx === currentIndex) {
-                    li.classList.add("active");
-                }
-                li.addEventListener("click", () => {
-                    currentIndex = idx;
-                    loadSong();
-                });
-                playlistDisplay.appendChild(li);
-            });
-        }
+  function toggleShuffle() {
+    shuffle = !shuffle;
+    alert("Shuffle " + (shuffle ? "enabled" : "disabled"));
+  }
 
-        window.onload = () => {
-            renderPlaylist();
-            loadSong();
-        };
-    </script>
+  function toggleRepeat() {
+    repeat = !repeat;
+    alert("Repeat " + (repeat ? "enabled" : "disabled"));
+  }
+
+  function seek(seconds) {
+    player.currentTime += seconds;
+  }
+
+  function prevSong() {
+    if (currentIndex > 0) {
+      currentIndex--;
+      loadSong();
+    }
+  }
+
+  function nextSong() {
+    if (shuffle) {
+      let nextIndex;
+      do {
+        nextIndex = Math.floor(Math.random() * playlist.length);
+      } while (nextIndex === currentIndex && playlist.length > 1);
+      currentIndex = nextIndex;
+    } else {
+      currentIndex = (currentIndex + 1) % playlist.length;
+    }
+    loadSong();
+  }
+
+  player.addEventListener('ended', () => {
+    if (repeat) {
+      loadSong();
+    } else {
+      nextSong();
+    }
+  });
+
+  player.addEventListener("play", () => {
+    visualizer.classList.add("playing");
+  });
+
+  player.addEventListener("pause", () => {
+    visualizer.classList.remove("playing");
+  });
+
+  window.onload = () => {
+    renderPlaylist();
+    loadSong();
+  };
+
+  function togglePlayPause() {
+  const playBtn = document.getElementById("playPauseBtn");
+  if (player.paused) {
+    player.play();
+    playBtn.textContent = "⏸️";
+  } else {
+    player.pause();
+    playBtn.textContent = "▶️";
+  }
+}
+
+// Sync icon on song end or manual pause
+player.addEventListener("pause", () => {
+  document.getElementById("playPauseBtn").textContent = "▶️";
+  visualizer.classList.remove("playing");
+});
+
+player.addEventListener("play", () => {
+  document.getElementById("playPauseBtn").textContent = "⏸️";
+  visualizer.classList.add("playing");
+});
+
+</script>
 </body>
 </html>
