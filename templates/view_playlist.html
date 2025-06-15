@@ -82,7 +82,9 @@
         <ul>
             {% for song in playlist.songs %}
                 <li>
-                    <a href="{{ song.url }}" target="_blank" class="song-link">{{ song.name }}</a>
+                    <a href="{{ url_for('media_player', index=loop.index0) }}?return_url={{ request.path }}" class="song-link">
+                        {{ song.name }}
+                    </a>
                 </li>
             {% endfor %}
         </ul>
