@@ -544,16 +544,16 @@ def generate_playlist():
     # Get inputs
     if request.method == 'POST':
         genre = request.form.get('genre')
-        #mood = request.form.get('mood')(egulo comment kore dilam, jate mood hardcoded hoye jaye)
+        mood = request.form.get('mood')
         playlist_length = request.form.get('playlist_length')
         playlist_name = request.form.get('playlist_name')
     else:
         genre = request.args.get('genre')
-        #mood = request.args.get('mood')
+        mood = request.args.get('mood')
         playlist_length = request.args.get('playlist_length')
         playlist_name = request.args.get('playlist_name')
 
-    mood = 'sad'  # Hardcoded mood(ata urie dibi)
+    #mood = 'sad'  # Hardcoded mood(ata urie dibi)
 
     if not all([genre, playlist_length, playlist_name]):
         flash("Missing input values. Please fill all fields.", "error")
@@ -581,18 +581,45 @@ def generate_playlist():
         return render_template('playlist.html', playlist_name=playlist_name, audio_files=[], is_premium=False, mood=mood)
 
     # ✅ Get matching MongoDB songs with mood
-    collection = song_db[genre.lower()]
-    mood_regex = {"$regex": f"^{mood}$", "$options": "i"}
-    mongo_songs = list(collection.find({ "mood": mood_regex }, {"filename": 1}))
+    print(genre)
+    if(genre.lower() == "classical"):
+        mood_thaats = {
+        'happy': [ 'Kafi', 'Asavari', 'Bhairav', 'Marva', 'Poorvi', 'Todi', 'Bhairavi'],
+        'sad': ['Marva', 'Poorvi', 'Todi'],
+        'neutral': ['Bilaval', 'Kafi', 'Bhairav', 'Todi', 'Khamaj', 'Poorvi'],
+        'angry': ['Bhairavi', 'Asavari', 'Todi' ],
+        'calm' : ['Kalyan', 'Kafi', 'Bilawal', 'Bhairav'],
+        'pleased' :['Bilaval', 'Kalyan', 'Khamaj', 'Kafi'],
+        'none' :['Bilaval', 'Kalyan', 'Khamaj', 'Kafi']
+        }
 
-    if not mongo_songs:
-        flash("No songs found in DB for selected mood.", "error")
-        return render_template('playlist.html', playlist_name=playlist_name, audio_files=[], is_premium=False, mood=mood)
+        selected_thaats = mood_thaats.get(mood.lower(), [])
+        print(f"[DEBUG] MOOD_THAAT - {mood.upper()} → {selected_thaats}")
+        if not selected_thaats:
+            flash("Invalid mood or no Thaat mapping found.", "error")
+            return render_template('playlist.html', playlist_name=playlist_name, audio_files=[])
 
-    all_pickle_names = [song['filename'] for song in mongo_songs if 'filename' in song]
+        songs = song_db[genre.lower()].find({"thaat": {"$in": selected_thaats}}, {'filename': 1})
+        filenames = [song['filename'] for song in songs if 'filename' in song]
 
-    # ✅ Random sample from available
-    selected = random.sample(all_pickle_names, min(playlist_length, len(all_pickle_names)))
+        if not filenames:
+            flash("No songs found for the selected mood and genre.", "error")
+            return render_template('playlist.html', playlist_name=playlist_name, audio_files=[], is_premium=False)
+
+        selected = random.sample(filenames, min(playlist_length, len(filenames)))
+    else:
+        collection = song_db[genre.lower()]
+        mood_regex = {"$regex": f"^{mood}$", "$options": "i"}
+        mongo_songs = list(collection.find({ "mood": mood_regex }, {"filename": 1}))
+
+        if not mongo_songs:
+            flash("No songs found in DB for selected mood.", "error")
+            return render_template('playlist.html', playlist_name=playlist_name, audio_files=[], is_premium=False, mood=mood)
+
+        all_pickle_names = [song['filename'] for song in mongo_songs if 'filename' in song]
+
+        # ✅ Random sample from available
+        selected = random.sample(all_pickle_names, min(playlist_length, len(all_pickle_names)))
 
     # ✅ Fetch Google Drive MP3s
     query = f"'{folder_id}' in parents and mimeType='audio/mpeg'"
