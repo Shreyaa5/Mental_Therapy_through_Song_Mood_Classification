@@ -82,80 +82,93 @@
       margin-top: 15px;
       display: none;
     }
-/* 
+
     .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
       margin-top: 20px;
+    }
+
+    .main-play-btn {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .main-play-btn button {
+      width: 60px;
+      height: 60px;
+      font-size: 20px;
+      background: radial-gradient(circle at center, #00f7ff 0%, #007bff 100%);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      box-shadow: 0 0 15px rgba(0, 247, 255, 0.6),
+                  0 0 30px rgba(0, 123, 255, 0.4);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .main-play-btn button:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(0, 247, 255, 0.8),
+                  0 0 40px rgba(0, 123, 255, 0.6);
+    }
+
+    .main-play-btn button.playing::after {
+      content: "";
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: rgba(0, 247, 255, 0.2);
+      animation: pulse 1.2s infinite ease-in-out;
+      z-index: -1;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 0.6;
+      }
+      100% {
+        transform: scale(1.5);
+        opacity: 0;
+      }
+    }
+
+    .other-controls {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       justify-content: center;
     }
 
-    .controls button {
-      background-color: #0ff;
-      color: #000;
+    .other-controls button {
+       width: 60px;
+      height: 60px;
+      font-size: 20px;
+      background: radial-gradient(circle at center, #00f7ff 0%, #007bff 100%);
+      color: white;
       border: none;
-      padding: 10px 16px;
-      border-radius: 6px;
-      font-size: 15px;
+      border-radius: 50%;
+      box-shadow: 0 0 15px rgba(0, 247, 255, 0.6),
+                  0 0 30px rgba(0, 123, 255, 0.4);
       cursor: pointer;
-      transition: background-color 0.3s ease;
+      transition: all 0.3s ease;
+      position: relative;
     }
 
-    .controls button:hover {
-      background-color: #00cccc;
-    } */
+    .other-controls button:hover {
+      background-color: #0056b3;
+    }
 
-.controls {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-top: 20px;
-}
-
-.main-play-btn {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-    gap: 10px;
-  
-}
-
-.main-play-btn button {
-  font-size: 15px;
-  padding: 10px 16px;
-  background-color: #007bff;
-  
-}
-.main-play-btn button:hover {
-  background-color: #0056b3;
-}
-
-.other-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-}
-
-.other-controls button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 6px;
-  font-size: 15px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.other-controls button:hover {
-  background-color: #0056b3;
-}
-
-
- .music-visualizer {
+    .music-visualizer {
       display: flex;
       justify-content: center;
       align-items: flex-end;
@@ -240,8 +253,6 @@
 <a href="{{ return_url }}" class="back-btn">← Back to Playlist</a>
 
 <div class="main-content">
-
-  <!-- 🎵 Player Section -->
   <div class="player-container">
     <h2 id="songTitle">Loading...</h2>
     <div class="music-visualizer" id="visualizer">
@@ -254,29 +265,24 @@
     <audio id="audioPlayer" controls autoplay></audio>
 
     <div class="controls">
-  <div class="main-play-btn">
-    <button onclick="seek(-10)" title="Rewind 10s">⏪</button>
-    <button id="playPauseBtn" onclick="togglePlayPause()" title="Play/Pause">▶️</button>
-    <button onclick="seek(10)" title="Forward 10s">⏩</button>
-  </div>
-  <div class="other-controls">
-    <button onclick="toggleShuffle()" title="Shuffle">🔀</button>
-    <button onclick="prevSong()" title="Previous">⏮️</button>
-    
-    <button onclick="nextSong()" title="Next">⏭️</button>
-    <button onclick="toggleRepeat()" title="Repeat">🔁</button>
-  </div>
-</div>
-
-
+      <div class="main-play-btn">
+        <button onclick="seek(-10)" title="Rewind 10s">⏪</button>
+        <button id="playPauseBtn" onclick="togglePlayPause()" title="Play/Pause">▶️</button>
+        <button onclick="seek(10)" title="Forward 10s">⏩</button>
+      </div>
+      <div class="other-controls">
+        <button onclick="toggleShuffle()" title="Shuffle">🔀</button>
+        <button onclick="prevSong()" title="Previous">⏮️</button>
+        <button onclick="nextSong()" title="Next">⏭️</button>
+        <button onclick="toggleRepeat()" title="Repeat">🔁</button>
+      </div>
+    </div>
   </div>
 
-  <!-- 📃 Playlist Section -->
   <div class="playlist-container">
     <h3>Playlist</h3>
     <ul id="playlistDisplay"></ul>
   </div>
-
 </div>
 
 <script>
@@ -286,6 +292,7 @@
   const title = document.getElementById("songTitle");
   const playlistDisplay = document.getElementById("playlistDisplay");
   const visualizer = document.getElementById("visualizer");
+  const playBtn = document.getElementById("playPauseBtn");
 
   let shuffle = false;
   let repeat = false;
@@ -310,9 +317,7 @@
     playlist.forEach((song, idx) => {
       const li = document.createElement("li");
       li.textContent = song.name;
-      if (idx === currentIndex) {
-        li.classList.add("active");
-      }
+      if (idx === currentIndex) li.classList.add("active");
       li.addEventListener("click", () => {
         currentIndex = idx;
         loadSong();
@@ -355,6 +360,18 @@
     loadSong();
   }
 
+  function togglePlayPause() {
+    if (player.paused) {
+      player.play();
+      playBtn.textContent = "⏸️";
+      playBtn.classList.add("playing");
+    } else {
+      player.pause();
+      playBtn.textContent = "▶️";
+      playBtn.classList.remove("playing");
+    }
+  }
+
   player.addEventListener('ended', () => {
     if (repeat) {
       loadSong();
@@ -364,10 +381,14 @@
   });
 
   player.addEventListener("play", () => {
+    playBtn.textContent = "⏸️";
+    playBtn.classList.add("playing");
     visualizer.classList.add("playing");
   });
 
   player.addEventListener("pause", () => {
+    playBtn.textContent = "▶️";
+    playBtn.classList.remove("playing");
     visualizer.classList.remove("playing");
   });
 
@@ -375,29 +396,6 @@
     renderPlaylist();
     loadSong();
   };
-
-  function togglePlayPause() {
-  const playBtn = document.getElementById("playPauseBtn");
-  if (player.paused) {
-    player.play();
-    playBtn.textContent = "⏸️";
-  } else {
-    player.pause();
-    playBtn.textContent = "▶️";
-  }
-}
-
-// Sync icon on song end or manual pause
-player.addEventListener("pause", () => {
-  document.getElementById("playPauseBtn").textContent = "▶️";
-  visualizer.classList.remove("playing");
-});
-
-player.addEventListener("play", () => {
-  document.getElementById("playPauseBtn").textContent = "⏸️";
-  visualizer.classList.add("playing");
-});
-
 </script>
 </body>
 </html>
