@@ -1,97 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diagnosis Result</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-image: url("/static/images/resultbg.png");
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            text-align: center;
-            padding: 20px;
-        }
-        .container {
-            background-color: white;
-            max-width: 600px;
-            margin: 100px auto;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            opacity: 0.95;
-        }
-        h1, h2 {
-            font-family: Verdana, Geneva, Tahoma, sans-serif;
-            color: #333;
-        }
-        form {
-            margin-top: 20px;
-            text-align: left;
-        }
-        label {
-            font-weight: bold;
-            display: block;
-            margin-top: 15px;
-        }
-        input[type="text"], input[type="number"] {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            font-size: 16px;
-        }
-        .radio-group {
-            margin-top: 10px;
-        }
-        .radio-group input {
-            margin-right: 8px;
-        }
-        button {
-            margin-top: 25px;
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Diagnosis Result</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #000;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* 🎥 Video Background */
+    #bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: -1;
+      opacity: 0.7;
+    }
+
+    .container {
+      background-color: rgba(255, 255, 255, 0.9);
+      max-width: 650px;
+      margin: 100px auto;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+      color: #333;
+    }
+
+    h1, h2 {
+      font-family: Verdana, Geneva, Tahoma, sans-serif;
+      margin: 10px 0;
+      color: #222;
+    }
+
+    form {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 15px;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    .radio-group {
+      margin-top: 10px;
+    }
+
+    .radio-group input {
+      margin-right: 8px;
+    }
+
+    button {
+      margin-top: 25px;
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
 </head>
 <body>
+
+<!-- 🎥 Background Video -->
+<video autoplay muted loop id="bg-video">
+  <source src="{{ url_for('static', filename='video/Video.mp4') }}" type="video/mp4" />
+  Your browser does not support the video tag.
+</video>
+
 <div class="container">
-    <h1>Mood Diagnosis Complete</h1>
-    <p>Your mood has been identified as <strong>{{ mood }}</strong>.</p>
-    <h2>Generate Your Playlist</h2>
+  <h1>Mood Diagnosis Complete</h1>
+  <p>Your mood has been identified as <strong>{{ mood }}</strong>.</p>
+  <h2>Generate Your Playlist</h2>
 
-    <form method="POST" action="{{ url_for('generate_playlist') }}">
-        <label for="playlist_name">Playlist Name:</label>
-        <input type="text" id="playlist_name" name="playlist_name" required>
+  <form method="POST" action="{{ url_for('generate_playlist') }}">
+    <label for="playlist_name">Playlist Name:</label>
+    <input type="text" id="playlist_name" name="playlist_name" required>
 
-        <label>Choose Genre:</label>
-        <div class="radio-group">
-            <input type="radio" name="genre" value="Hindi-Retro" required> Hindi-Retro
-            <input type="radio" name="genre" value="Hindi-Modern"> Hindi-Modern
-            <input type="radio" name="genre" value="Classical"> Classical
-            <input type="radio" name="genre" value="Bengali"> Bengali
+    <label>Choose Genre:</label>
+    <div class="radio-group">
+      <input type="radio" name="genre" value="Hindi-Retro" required> Hindi-Retro
+      <input type="radio" name="genre" value="Hindi-Modern"> Hindi-Modern
+      <input type="radio" name="genre" value="Classical"> Classical
+    </div>
 
-        </div>
+    <label for="playlist_length">Number of Songs (1–30):</label>
+    <input type="number" id="playlist_length" name="playlist_length" min="1" max="30" required>
 
-        <label for="playlist_length">Number of Songs (1–30):</label>
-        <input type="number" id="playlist_length" name="playlist_length" min="1" max="30" required>
+    <input type="hidden" name="mood" value="{{ mood }}">
 
-        <input type="hidden" name="mood" value="{{ mood }}">
-
-        <button type="submit">Generate Playlist</button>
-    </form>
+    <button type="submit">Generate Playlist</button>
+  </form>
 </div>
 </body>
 </html>
